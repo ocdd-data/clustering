@@ -88,4 +88,4 @@ slack.uploadFile(
     f"Weekly Rider Segmentation Report for `{report_date_str}`"
 )
 
-print(f"✅ Combined report saved to {output_path}")
+print(f"Combined report saved to {output_path}")
