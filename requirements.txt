@@ -2,6 +2,7 @@ certifi==2023.11.17
 charset-normalizer==3.3.2
 idna==3.6
 joblib==1.5.0
+kaleido==0.2.1
 numpy==1.26.3
 pandas==2.2.0
 plotly==5.22.0
