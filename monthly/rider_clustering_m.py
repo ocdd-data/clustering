@@ -8,7 +8,7 @@ from datetime import datetime, timedelta
 from dotenv import load_dotenv
 from utils.helpers import Query, Redash
 from utils.slack import SlackBot
-from utils.sankey import generate_cluster_transition_sankey
+from utils.transition import generate_cluster_transition_barchart
 
 class RiderClusterPredictor:
     def __init__(self, models_dir: Path):
@@ -74,13 +74,13 @@ def main():
     summary = pipeline.summarize(df_curr_clustered)
     slack.uploadFile(curr_path, os.getenv("SLACK_CHANNEL"), f"*Rider Segmentation* for {region} ({output_month})\n```{summary}```")
 
-    generate_cluster_transition_sankey(
+    generate_cluster_transition_barchart(
       df_prev_clustered,
       df_curr_clustered,
-      output_dir=output_dir,
-      curr_month_label=output_month,
-      prev_month_label=prev_month_label,
-      slack=slack
+      prev_month_label,
+      output_month,
+      output_dir,
+      slack
     )
 
 if __name__ == "__main__":
