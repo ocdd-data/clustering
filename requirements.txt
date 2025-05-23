@@ -3,6 +3,7 @@ charset-normalizer==3.3.2
 idna==3.6
 joblib==1.5.0
 kaleido==0.2.1
+matplotlib>=3.5
 numpy==1.26.3
 pandas==2.2.0
 plotly==5.22.0
@@ -12,9 +13,9 @@ pytz==2023.4
 requests==2.31.0
 scikit-learn==1.6.1
 scipy==1.15.3
+seaborn>=0.11
 six==1.16.0
 slack_sdk==3.26.2
 threadpoolctl==3.6.0
 tzdata==2023.4
 urllib3==2.2.0
-
