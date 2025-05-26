@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 import seaborn as sns
 
-def generate_cluster_transition_barchart(df_prev, df_curr, prev_month_label, curr_month_label, output_dir, slack):
+def generate_cluster_transition_barchart(df_prev, df_curr, prev_month_label, curr_month_label, output_dir, slack, thread_ts=None):
     df_prev = df_prev.rename(columns={"cluster": "cluster_prev"})
     df_curr = df_curr.rename(columns={"cluster": "cluster_curr"})
 
@@ -68,6 +68,6 @@ def generate_cluster_transition_barchart(df_prev, df_curr, prev_month_label, cur
     chart_path = os.path.join(output_dir, f"cluster_transition_chart_{curr_month_label}.png")
     plt.savefig(chart_path, dpi=300)
 
-    slack.uploadFile(chart_path, os.getenv("SLACK_CHANNEL"), f"*Cluster Transition Chart* ({curr_month_label})")
+    slack.uploadFile(chart_path, os.getenv("SLACK_CHANNEL"), comment=f"*Cluster Transition Chart* ({curr_month_label})", thread_ts=thread_ts)
     # slack.uploadFile(count_path, os.getenv("SLACK_CHANNEL"), f"*Transition Count Matrix* ({curr_month_label})")
     # slack.uploadFile(percent_path, os.getenv("SLACK_CHANNEL"), f"*Transition Percentage Matrix* ({curr_month_label})")
