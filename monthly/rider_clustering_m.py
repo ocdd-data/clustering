@@ -90,15 +90,19 @@ def main():
       output_month, prev_month_label, region
     )
     
-    slack.uploadFile(curr_path, os.getenv("SLACK_CHANNEL"), summary)
+    channel = os.getenv("SLACK_CHANNEL")
+    ts = slack.postMessage(channel, summary)
 
-    generate_cluster_transition_barchart(
-      df_prev_clustered,
-      df_curr_clustered,
-      prev_month_label,
-      output_month,
-      output_dir,
-      slack
+    slack.uploadFile(curr_path, channel, title="Cluster CSV", thread_ts=ts)
+
+    chart_path = generate_cluster_transition_barchart(
+        df_prev_clustered,
+        df_curr_clustered,
+        prev_month_label,
+        output_month,
+        output_dir,
+        slack,
+        thread_ts=ts
     )
 
 if __name__ == "__main__":
