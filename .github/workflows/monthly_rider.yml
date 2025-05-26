@@ -32,5 +32,5 @@ jobs:
           pip install -r requirements.txt
 
       - name: execute py script
-        run: python -m montly.rider_clustering_m
+        run: python -m monthly.rider_clustering_m
   
