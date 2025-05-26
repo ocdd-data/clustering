@@ -37,7 +37,7 @@ def generate_cluster_transition_barchart(df_prev, df_curr, prev_month_label, cur
         (axes[1], count_matrix, f"{prev_month_label} → {curr_month_label} (Counts)", "Number of Riders", False)
     ]:
         data.plot(kind='bar', stacked=True, ax=ax, color=[color_map[c] for c in clusters_prev], legend=False)
-        ax.set_title(title)
+        ax.set_title(title, fontweight='bold')
         ax.set_ylabel(ylabel)
         ax.set_xlabel(f"To Cluster ({curr_month_label})")
         ax.set_xticklabels(data.columns, rotation=0)
