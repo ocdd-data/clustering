@@ -43,7 +43,6 @@ def get_redash_data(start, end, redash, query_id, return_cluster_stats=False):
         print("No data returned.")
         return (pd.DataFrame(), pd.DataFrame()) if return_cluster_stats else pd.DataFrame()
 
-    df = df.rename(columns={"active_days": "frequency", "total_trips": "total"})
     required = ['rider_uuid', 'frequency', 'total']
     if any(col not in df.columns for col in required):
         print(f"Missing columns: {required}")
