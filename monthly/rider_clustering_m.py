@@ -29,9 +29,23 @@ class RiderClusterPredictor:
         df['cluster_name'] = df['cluster'].map(self.label_map)
         return df
 
-    def summarize(self, df):
-        summary = df['cluster_name'].value_counts().rename_axis('cluster_name').reset_index(name='count')
-        return summary.to_string(index=False)
+def generate_cluster_summary_with_diff(df_curr, df_prev, label_map, month_label, prev_label, region):
+    curr_counts = df_curr['cluster'].value_counts().rename("curr_count")
+    prev_counts = df_prev['cluster'].value_counts().rename("prev_count")
+    diff_df = pd.concat([curr_counts, prev_counts], axis=1).fillna(0).astype(int)
+    diff_df["delta"] = diff_df["curr_count"] - diff_df["prev_count"]
+    diff_df["cluster_name"] = diff_df.index.map(label_map)
+
+    lines = [f"*{region} Rider Segmentation Report ({month_label}):*"]
+    for idx, row in diff_df.iterrows():
+        delta = row["delta"]
+        arrow = ":increase:" if delta > 0 else ":decrease:" if delta < 0 else "➖"
+        delta_str = f"{arrow} {abs(delta):,}"
+        lines.append(f"> *{row['cluster_name']}*: *{row['curr_count']:,}* ({delta_str})")
+
+    return "\n".join(lines)
+
+
 
 def main():
     load_dotenv()
@@ -71,8 +85,12 @@ def main():
     curr_path = f"{output_dir}/rider_clusters_{region}_{output_month}.csv"
     df_curr_clustered.to_csv(curr_path, index=False)
 
-    summary = pipeline.summarize(df_curr_clustered)
-    slack.uploadFile(curr_path, os.getenv("SLACK_CHANNEL"), f"*Rider Segmentation* for {region} ({output_month})\n```{summary}```")
+    summary = generate_cluster_summary_with_diff(
+      df_curr_clustered, df_prev_clustered, pipeline.label_map,
+      output_month, prev_month_label, region
+    )
+    
+    slack.uploadFile(curr_path, os.getenv("SLACK_CHANNEL"), summary)
 
     generate_cluster_transition_barchart(
       df_prev_clustered,
