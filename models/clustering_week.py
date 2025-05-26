@@ -17,7 +17,6 @@ cluster_def['Centroid'] = cluster_def['Centroid'].apply(lambda x: [float(i) for 
 cluster_centroids = np.array(cluster_def['Centroid'].tolist())
 cluster_labels = dict(zip(cluster_def["Cluster"], cluster_def["Description"]))
 
-
 def scale_features(df):
     for feature in scaler_mean.index:
         if feature in df.columns:
@@ -26,7 +25,7 @@ def scale_features(df):
 
 
 def assign_clusters(df):
-    X = df[['frequency_count_scaled', 'total_trips_scaled', 'avg_trips_per_day_scaled']].values
+    X = df[['frequency_scaled', 'total_scaled', 'rate_scaled']].values
     distances = np.linalg.norm(X[:, None, :] - cluster_centroids[None, :, :], axis=2)
     df['Cluster'] = distances.argmin(axis=1)
     return df
@@ -44,18 +43,18 @@ def get_redash_data(start, end, redash, query_id, return_cluster_stats=False):
         print("No data returned.")
         return (pd.DataFrame(), pd.DataFrame()) if return_cluster_stats else pd.DataFrame()
 
-    df = df.rename(columns={"active_days": "frequency_count"})
-    required = ['rider_uuid', 'frequency_count', 'total_trips']
+    df = df.rename(columns={"active_days": "frequency", "total_trips": "total"})
+    required = ['rider_uuid', 'frequency', 'total']
     if any(col not in df.columns for col in required):
         print(f"Missing columns: {required}")
         return (pd.DataFrame(), pd.DataFrame()) if return_cluster_stats else pd.DataFrame()
 
     agg_df = df.groupby('rider_uuid').agg(
-        frequency_count=('frequency_count', 'sum'),
-        total_trips=('total_trips', 'sum')
+        frequency=('frequency', 'sum'),
+        total=('total', 'sum')
     ).reset_index()
-    agg_df['avg_trips_per_day'] = agg_df['total_trips'] / agg_df['frequency_count']
-    agg_df = agg_df.dropna(subset=['avg_trips_per_day'])
+    agg_df['rate'] = agg_df['total'] / agg_df['frequency']
+    agg_df = agg_df.dropna(subset=['rate'])
 
     agg_df = scale_features(agg_df)
     agg_df = assign_clusters(agg_df)
@@ -65,9 +64,10 @@ def get_redash_data(start, end, redash, query_id, return_cluster_stats=False):
 
     if return_cluster_stats:
         cluster_stats = agg_df.groupby('Cluster_Description').agg({
-            'total_trips': 'sum'
+            'total': 'sum'
         }).round(2).T
         cluster_stats.index = [(end + timedelta(days=1)).strftime("%Y-%m-%d")]
         return agg_df, cluster_stats
 
     return agg_df
+
