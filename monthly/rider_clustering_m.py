@@ -12,13 +12,13 @@ from utils.transition import generate_cluster_transition_barchart
 
 class RiderClusterPredictor:
     def __init__(self, models_dir: Path):
-      scaler_def = pd.read_csv(models_dir / "scaler_params.csv")
-      self.scaler_mean = scaler_def.set_index("Feature")["Mean"]
-      self.scaler_var = scaler_def.set_index("Feature")["Variance"]
+        scaler_def = pd.read_csv(models_dir / "scaler_params.csv")
+        self.scaler_mean = scaler_def.set_index("Feature")["Mean"]
+        self.scaler_var = scaler_def.set_index("Feature")["Variance"]
 
-      cluster_def = pd.read_csv(models_dir / "cluster_centroids.csv")
-      self.centroids = cluster_def[self.scaler_mean.index.tolist()].values
-      self.label_map = dict(zip(cluster_def["Cluster"], cluster_def["Description"]))
+        cluster_def = pd.read_csv(models_dir / "cluster_centroids.csv")
+        self.centroids = cluster_def[self.scaler_mean.index.tolist()].values
+        self.label_map = dict(zip(cluster_def["Cluster"], cluster_def["Description"]))
 
     def assign(self, df):
         X = df[self.scaler_mean.index].dropna()
@@ -45,8 +45,6 @@ def generate_cluster_summary_with_diff(df_curr, df_prev, label_map, month_label,
 
     return "\n".join(lines)
 
-
-
 def main():
     load_dotenv()
 
@@ -70,7 +68,6 @@ def main():
     query = Query(4216, params={"date": redash_param_date})
     client.run_queries([query])
     df_all = client.get_result(query.id)
-
     df_all['month'] = pd.to_datetime(df_all['month']).dt.date
 
     df_prev = df_all[df_all['month'] == first_day_prev_month.date()]
@@ -79,30 +76,25 @@ def main():
     df_prev_clustered = pipeline.assign(df_prev)
     df_curr_clustered = pipeline.assign(df_curr)
 
-    df_prev_clustered.to_csv(f"{output_dir}/rider_clusters_{region}_{prev_month_label}.csv", index=False)
-    df_prev_clustered.to_csv(f"{output_dir}/rider_clusters_{region}_prev.csv", index=False)
+    summary = generate_cluster_summary_with_diff(
+        df_curr_clustered, df_prev_clustered, pipeline.label_map,
+        output_month, prev_month_label, region
+    )
+    summary_ts = slack.postMessage(os.getenv("SLACK_CHANNEL"), summary)
 
     curr_path = f"{output_dir}/rider_clusters_{region}_{output_month}.csv"
     df_curr_clustered.to_csv(curr_path, index=False)
 
-    summary = generate_cluster_summary_with_diff(
-      df_curr_clustered, df_prev_clustered, pipeline.label_map,
-      output_month, prev_month_label, region
-    )
-    
-    channel = os.getenv("SLACK_CHANNEL")
-    ts = slack.postMessage(channel, summary)
+    slack.uploadFile(curr_path, os.getenv("SLACK_CHANNEL"), comment="Cluster assignments CSV", thread_ts=summary_ts)
 
-    slack.uploadFile(curr_path, channel, title="Cluster CSV", thread_ts=ts)
-
-    chart_path = generate_cluster_transition_barchart(
+    generate_cluster_transition_barchart(
         df_prev_clustered,
         df_curr_clustered,
         prev_month_label,
         output_month,
         output_dir,
         slack,
-        thread_ts=ts
+        thread_ts=None
     )
 
 if __name__ == "__main__":
