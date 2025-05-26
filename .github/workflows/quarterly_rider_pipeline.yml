@@ -1,4 +1,4 @@
-# .github/workflows/quarterly_rider_pipeline.yml
+# This workflow automically updates Clustering Model every Quarter
 name: Rider Clustering Quarterly Training
 
 on:
