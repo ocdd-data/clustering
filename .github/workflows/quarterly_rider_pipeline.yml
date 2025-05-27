@@ -30,7 +30,7 @@ jobs:
           pip install -r requirements.txt
 
       - name: Run clustering pipeline
-        run: python -m monthly.pipeline
+        run: python -m utils.pipeline
 
       - name: Commit and push updated model files
         run: |
