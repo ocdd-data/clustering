@@ -1,4 +1,5 @@
 import os
+import time
 import pandas as pd
 import numpy as np
 from pathlib import Path
@@ -99,24 +100,22 @@ def main():
         df_prev_clustered, df_curr_clustered, prev_month_label, output_month, output_dir
     )
 
-    # First upload chart and summary
     main_ts = slack.uploadFilesWithComment(
         files=[chart_path],
         channel=os.getenv("SLACK_CHANNEL"),
         initial_comment=summary_text
     )
 
-    # Then reply with CSV
     curr_path = f"{output_dir}/rider_clusters_{region}_{output_month}.csv"
     df_curr_clustered.to_csv(curr_path, index=False)
 
+    time.sleep(2)
     slack.uploadFile(
         curr_path,
         os.getenv("SLACK_CHANNEL"),
         comment="📎 Rider Cluster Assignments CSV",
         thread_ts=main_ts
     )
-
 
 if __name__ == "__main__":
     main()
