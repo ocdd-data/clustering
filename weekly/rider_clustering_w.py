@@ -15,7 +15,7 @@ from models.clustering_weekly import get_redash_data
 def main():
     load_dotenv()
     api_key = os.getenv("REDASH_API_KEY")
-    base_url = os.getenv("REDASH_URL")
+    base_url = os.getenv("REDASH_BASE_URL")
     query_id = 4641
     slack_channel = os.getenv("SLACK_CHANNEL")
     redash = Redash(key=api_key, base_url=base_url)
