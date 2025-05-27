@@ -109,7 +109,7 @@ def main():
     curr_path = f"{output_dir}/rider_clusters_{region}_{output_month}.csv"
     df_curr_clustered.to_csv(curr_path, index=False)
 
-    time.sleep(2)
+    time.sleep(5)
     slack.uploadFile(
         curr_path,
         os.getenv("SLACK_CHANNEL"),
