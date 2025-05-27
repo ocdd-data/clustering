@@ -50,8 +50,15 @@ jobs:
         run: |
           git config --global user.name 'github-actions'
           git config --global user.email 'github-actions@github.com'
-          git add models/${{ matrix.region }}/*.csv models/${{ matrix.region }}/*.pkl
-          git commit -m "[Automated] Quarterly model update for ${{ matrix.region }} - $(date +'%Y-%m-%d')"
-          git push origin main
+          git add models/${{ matrix.region }}/*
+          
+          if git diff --cached --quiet; then
+            echo "No model changes detected for ${{ matrix.region }}, skipping commit."
+          else
+            git commit -m "[Automated] Quarterly model update for ${{ matrix.region }} - $(date +'%Y-%m-%d')"
+            git pull --rebase origin main
+            git push origin main
+          fi
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
