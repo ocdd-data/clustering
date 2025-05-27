@@ -1,4 +1,5 @@
 import os
+import time
 import ast
 import pandas as pd
 import numpy as np
@@ -36,7 +37,14 @@ def generate_cluster_summary_with_diff(df_curr, df_prev, label_map, month_label,
     diff_df["delta"] = diff_df["curr_count"] - diff_df["prev_count"]
     diff_df["cluster_name"] = diff_df.index.map(label_map)
 
+    total_curr = df_curr.shape[0]
+    total_prev = df_prev.shape[0]
+    total_delta = total_curr - total_prev
+    arrow = ":increase:" if total_delta > 0 else ":decrease:" if total_delta < 0 else "➖"
+
     lines = [f"*{region} Rider Segmentation Report ({month_label}):*"]
+    lines.append(f"> *Total Riders*: *{total_curr:,}* ({arrow} {abs(total_delta):,})")
+
     for idx, row in diff_df.iterrows():
         delta = row["delta"]
         arrow = ":increase:" if delta > 0 else ":decrease:" if delta < 0 else "➖"
@@ -65,7 +73,7 @@ def main():
 
     pipeline = RiderClusterPredictor(models_dir=Path("models"))
 
-    query = Query(4216, params={"date": redash_param_date})
+    query = Query(4738, params={"date": redash_param_date})
     client.run_queries([query])
     df_all = client.get_result(query.id)
     df_all['month'] = pd.to_datetime(df_all['month']).dt.date
@@ -76,26 +84,34 @@ def main():
     df_prev_clustered = pipeline.assign(df_prev)
     df_curr_clustered = pipeline.assign(df_curr)
 
-    summary = generate_cluster_summary_with_diff(
+    summary_text = generate_cluster_summary_with_diff(
         df_curr_clustered, df_prev_clustered, pipeline.label_map,
         output_month, prev_month_label, region
     )
-    summary_ts = slack.postMessage(os.getenv("SLACK_CHANNEL"), summary)
-
-    curr_path = f"{output_dir}/rider_clusters_{region}_{output_month}.csv"
-    df_curr_clustered.to_csv(curr_path, index=False)
-
-    slack.uploadFile(curr_path, os.getenv("SLACK_CHANNEL"), comment="Cluster assignments CSV", thread_ts=summary_ts)
-
-    generate_cluster_transition_barchart(
+    chart_path, count_path, percent_path = generate_cluster_transition_barchart(
         df_prev_clustered,
         df_curr_clustered,
         prev_month_label,
         output_month,
-        output_dir,
-        slack,
-        thread_ts=None
+        output_dir
     )
+
+    main_ts = slack.uploadFilesWithComment(
+        files=[chart_path],
+        channel=os.getenv("SLACK_CHANNEL"),
+        initial_comment=summary_text
+    )
+
+    curr_path = f"{output_dir}/rider_clusters_{region}_{output_month}.csv"
+    df_curr_clustered.to_csv(curr_path, index=False)
+
+
+    slack.uploadFile(curr_path, os.getenv("SLACK_CHANNEL"), comment="📎 Rider Cluster Assignments CSV", thread_ts=main_ts)
+
+    # slack.uploadFile(count_path, os.getenv("SLACK_CHANNEL"), comment="📊 Transition Count Matrix CSV", thread_ts=main_ts)
+
+    # slack.uploadFile(percent_path, os.getenv("SLACK_CHANNEL"), comment="📈 Transition Percentage Matrix CSV", thread_ts=main_ts)
+
 
 if __name__ == "__main__":
     main()
