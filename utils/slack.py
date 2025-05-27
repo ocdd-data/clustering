@@ -23,17 +23,43 @@ class SlackBot:
             self.logger.error(f"Error posting message: {e}")
             return None
 
-    def uploadFile(self, file: str, channel: str, comment: str = "", thread_ts: str = None) -> None:
+    def uploadFile(self, file: str, channel: str, comment: str = "", thread_ts: str = None) -> str:
         try:
-            result = self.client.files_upload_v2(
+            response = self.client.files_upload_v2(
                 channel=channel,
-                initial_comment=comment,
                 file=file,
+                initial_comment=comment if not thread_ts else None,
                 thread_ts=thread_ts
             )
-            self.logger.info(result)
+            self.logger.info(response)
+
+            return response["file"]["timestamp"]
+
         except SlackApiError as e:
             self.logger.error(f"Error uploading file: {e}")
+            return None
+
+
+    def uploadFilesWithComment(self, files: list, channel: str, initial_comment: str = "") -> str:
+        ts_to_return = None
+        for idx, file_path in enumerate(files):
+            try:
+                result = self.client.files_upload_v2(
+                    channel=channel,
+                    file=file_path,
+                    initial_comment=initial_comment if idx == 0 else None
+                )
+                self.logger.info(result)
+
+                if ts_to_return is None:
+                    shares = result.get("file", {}).get("shares", {})
+                    for scope in ["public", "private"]:
+                        if scope in shares and channel in shares[scope]:
+                            ts_to_return = shares[scope][channel][0]["ts"]
+
+            except SlackApiError as e:
+                self.logger.error(f"Error uploading file {file_path}: {e}")
+        return ts_to_return
 
 
     def to_pandas(self, url: str) -> pd.DataFrame:
