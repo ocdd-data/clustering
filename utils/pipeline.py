@@ -1,3 +1,4 @@
+from pathlib import Path
 import pandas as pd
 from utils.helpers import Query, Redash
 from dotenv import load_dotenv
@@ -41,12 +42,15 @@ class RiderClusterTrainer:
             'Variance': self.scaler.var_
         })
 
-        os.makedirs("models", exist_ok=True)
+        region_dir = Path("models") / os.getenv("REGION")
+        region_dir.mkdir(parents=True, exist_ok=True)
+
         centroids['Centroid'] = centroids[self.features].values.tolist()
-        centroids[self.features + ['Cluster', 'Description']].to_csv("models/cluster_centroids.csv", index=False)
-        scaler_df.to_csv("models/scaler_params.csv", index=False)
-        joblib.dump(self.kmeans, "models/kmeans_model.pkl")
-        joblib.dump(self.scaler, "models/scaler.pkl")
+        centroids[self.features + ['Cluster', 'Description']].to_csv(region_dir / "cluster_centroids.csv", index=False)
+        scaler_df.to_csv(region_dir / "scaler_params.csv", index=False)
+        joblib.dump(self.kmeans, region_dir / "kmeans_model.pkl")
+        joblib.dump(self.scaler, region_dir / "scaler.pkl")
+
 
 
 def get_previous_quarter_dates(ref_date=None):
@@ -60,21 +64,23 @@ def get_previous_quarter_dates(ref_date=None):
 def main():
     load_dotenv()
 
+    region = os.getenv("REGION")
+    query_id = int(os.getenv("QUERY_ID"))
+
     date_start, date_end = get_previous_quarter_dates()
-    print(f"Using data from {date_start} to {date_end}")
+    print(f"Using data from {date_start} to {date_end} for region {region}")
 
     redash = Redash(
         key=os.getenv("REDASH_API_KEY"),
         base_url=os.getenv("REDASH_BASE_URL")
     )
 
-    query = Query(4737, params={
+    query = Query(query_id, params={
         "Date Range": {
             "start": date_start.strftime("%Y-%m-%d"),
             "end": date_end.strftime("%Y-%m-%d")
         }
     })
-
 
     redash.run_queries([query])
     df = redash.get_result(query.id)
@@ -82,9 +88,7 @@ def main():
     trainer = RiderClusterTrainer()
     trainer.train(df)
 
-    print("Saved model outputs to /models")
+    print(f"Model saved to models/{region}")
 
 if __name__ == "__main__":
     main()
-
-    
