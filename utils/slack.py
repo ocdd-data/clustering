@@ -51,7 +51,6 @@ class SlackBot:
                 self.logger.info(response)
     
                 if ts_to_return is None:
-                    # Most reliable way to get message_ts is via file object -> shares -> ts
                     file_info = response.get("file", {})
                     shares = file_info.get("shares", {}).get("private", {}).get(channel)
                     if shares and len(shares) > 0:
