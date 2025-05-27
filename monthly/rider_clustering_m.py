@@ -61,7 +61,7 @@ def main():
     load_dotenv()
 
     region = os.getenv("REGION")
-    query_id = int(os.getenv("QUERY_ID"))
+    report_id = int(os.getenv("REPORT_ID"))
 
     today = datetime.today()
     first_day_last_month = (today.replace(day=1) - timedelta(days=1)).replace(day=1)
@@ -79,9 +79,10 @@ def main():
 
     pipeline = RiderClusterPredictor(models_dir=Path("models"))
 
-    query = Query(query_id, params={"date": redash_param_date})
+    query = Query(report_id, params={"date": redash_param_date})
     client.run_queries([query])
-    df_all = client.get_result(query.id)
+    df_all = client.get_result(report_id)
+    
     df_all['month'] = pd.to_datetime(df_all['month']).dt.date
 
     df_prev = df_all[df_all['month'] == first_day_prev_month.date()]
