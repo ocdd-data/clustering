@@ -2,10 +2,10 @@ import pandas as pd
 import numpy as np
 import re
 from datetime import timedelta
+from pathlib import Path
+from utils.helpers import Query
 
 # Load model definitions
-
-from pathlib import Path
 MODELS_DIR = Path(__file__).resolve().parent
 
 scaler_def = pd.read_csv(MODELS_DIR / "scaler_definitions.csv")
@@ -52,6 +52,8 @@ def get_redash_data(start, end, redash, query_id, return_cluster_stats=False):
         frequency=('frequency', 'sum'),
         total=('total', 'sum')
     ).reset_index()
+    
+    agg_df = agg_df[agg_df['frequency'] > 0]
     agg_df['rate'] = agg_df['total'] / agg_df['frequency']
     agg_df = agg_df.dropna(subset=['rate'])
 
