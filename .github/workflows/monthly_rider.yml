@@ -8,16 +8,26 @@ on:
   workflow_dispatch:
 
 jobs:
-  run-python-script:
+  run-monthly-clustering:
+    strategy:
+      matrix:
+        region: ["SG", "KH"]
+        include:
+          - region: "SG"
+            query_id: 4737
+            report_id: 4738
+          - region: "KH"
+            query_id: 4747
+            report_id: 4748
     runs-on: ubuntu-latest
     steps:
-      - name: checkout repo content
-        uses: actions/checkout@v4 # checkout the repository content
+      - name: Checkout repo
+        uses: actions/checkout@v4
 
-      - name: setup python
+      - name: Setup Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11' # install the python version needed
+          python-version: '3.11'
 
       - name: Create .env file
         run: |
@@ -25,12 +35,13 @@ jobs:
           echo "REDASH_API_KEY=${{ secrets.REDASH_API_KEY }}" >> .env
           echo "SLACK_TOKEN=${{ secrets.SLACK_TOKEN }}" >> .env
           echo "SLACK_CHANNEL=${{ secrets.SLACK_CHANNEL }}" >> .env
+          echo "REGION=${{ matrix.region }}" >> .env
+          echo "QUERY_ID=${{ matrix.query_id }}" >> .env
+          echo "REPORT_ID=${{ matrix.report_id }}" >> .env
 
-      - name: install python packages
+      - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: execute py script
+      - name: Run pipeline
         run: python -m monthly.rider_clustering_m
-  
