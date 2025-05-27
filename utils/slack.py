@@ -1,11 +1,13 @@
 import os
 from io import StringIO
 from logging import Logger
+
 import pandas as pd
 import requests
 from dotenv import load_dotenv
 from slack_sdk import WebClient
 from slack_sdk.errors import SlackApiError
+
 
 class SlackBot:
     def __init__(self):
@@ -56,11 +58,6 @@ class SlackBot:
                     if shares and len(shares) > 0:
                         ts_to_return = shares[0].get("ts")
     
-            except SlackApiError as e:
-                self.logger.error(f"Error uploading file {file_path}: {e}")
-        return ts_to_return
-
-
             except SlackApiError as e:
                 self.logger.error(f"Error uploading file {file_path}: {e}")
         return ts_to_return
