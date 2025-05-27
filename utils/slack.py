@@ -39,23 +39,28 @@ class SlackBot:
             self.logger.error(f"Error uploading file: {e}")
             return None
 
-
     def uploadFilesWithComment(self, files: list, channel: str, initial_comment: str = "") -> str:
         ts_to_return = None
         for idx, file_path in enumerate(files):
             try:
-                result = self.client.files_upload_v2(
+                response = self.client.files_upload_v2(
                     channel=channel,
                     file=file_path,
                     initial_comment=initial_comment if idx == 0 else None
                 )
-                self.logger.info(result)
-
+                self.logger.info(response)
+    
                 if ts_to_return is None:
-                    shares = result.get("file", {}).get("shares", {})
-                    for scope in ["public", "private"]:
-                        if scope in shares and channel in shares[scope]:
-                            ts_to_return = shares[scope][channel][0]["ts"]
+                    # Most reliable way to get message_ts is via file object -> shares -> ts
+                    file_info = response.get("file", {})
+                    shares = file_info.get("shares", {}).get("private", {}).get(channel)
+                    if shares and len(shares) > 0:
+                        ts_to_return = shares[0].get("ts")
+    
+            except SlackApiError as e:
+                self.logger.error(f"Error uploading file {file_path}: {e}")
+        return ts_to_return
+
 
             except SlackApiError as e:
                 self.logger.error(f"Error uploading file {file_path}: {e}")
