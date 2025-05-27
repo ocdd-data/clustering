@@ -48,7 +48,7 @@ def generate_cluster_summary_with_diff(df_curr, df_prev, label_map, month_label,
     lines = [f"*{region} Rider Segmentation Report ({month_label}):*"]
     lines.append(f"> *Total Riders*: *{total_curr:,}* ({arrow} {abs(total_delta):,})")
 
-    for idx, row in diff_df.iterrows():
+    for idx, row in diff_df.sort_index().iterrows():
         delta = row["delta"]
         arrow = ":increase:" if delta > 0 else ":decrease:" if delta < 0 else "➖"
         delta_str = f"{arrow} {abs(delta):,}"
@@ -61,7 +61,7 @@ def main():
     load_dotenv()
 
     region = os.getenv("REGION")
-    report_id = int(os.getenv("REPORT_ID"))
+    query_id = int(os.getenv("REPORT_ID"))  # now using report ID
 
     today = datetime.today()
     first_day_last_month = (today.replace(day=1) - timedelta(days=1)).replace(day=1)
@@ -79,10 +79,9 @@ def main():
 
     pipeline = RiderClusterPredictor(models_dir=Path("models"))
 
-    query = Query(report_id, params={"date": redash_param_date})
+    query = Query(query_id, params={"date": redash_param_date})
     client.run_queries([query])
-    df_all = client.get_result(report_id)
-    
+    df_all = client.get_result(query.id)
     df_all['month'] = pd.to_datetime(df_all['month']).dt.date
 
     df_prev = df_all[df_all['month'] == first_day_prev_month.date()]
@@ -100,12 +99,14 @@ def main():
         df_prev_clustered, df_curr_clustered, prev_month_label, output_month, output_dir
     )
 
+    # First upload chart and summary
     main_ts = slack.uploadFilesWithComment(
         files=[chart_path],
         channel=os.getenv("SLACK_CHANNEL"),
         initial_comment=summary_text
     )
 
+    # Then reply with CSV
     curr_path = f"{output_dir}/rider_clusters_{region}_{output_month}.csv"
     df_curr_clustered.to_csv(curr_path, index=False)
 
