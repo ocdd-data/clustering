@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 import seaborn as sns
 
-def generate_cluster_transition_barchart(df_prev, df_curr, prev_month_label, curr_month_label, output_dir, slack, thread_ts=None):
+def generate_cluster_transition_barchart(df_prev, df_curr, prev_month_label, curr_month_label, output_dir):
     df_prev = df_prev.rename(columns={"cluster": "cluster_prev"})
     df_curr = df_curr.rename(columns={"cluster": "cluster_curr"})
 
@@ -21,8 +21,11 @@ def generate_cluster_transition_barchart(df_prev, df_curr, prev_month_label, cur
     percent_matrix = count_matrix.div(count_matrix.sum(axis=1), axis=0) * 100
 
     os.makedirs(output_dir, exist_ok=True)
+
     count_path = os.path.join(output_dir, f"transition_counts_{curr_month_label}.csv")
     percent_path = os.path.join(output_dir, f"transition_percents_{curr_month_label}.csv")
+    chart_path = os.path.join(output_dir, f"cluster_transition_chart_{curr_month_label}.png")
+
     count_matrix.to_csv(count_path)
     percent_matrix.to_csv(percent_path)
 
@@ -60,14 +63,10 @@ def generate_cluster_transition_barchart(df_prev, df_curr, prev_month_label, cur
                 color='black'
             )
 
-
         handles = [plt.Rectangle((0, 0), 1, 1, color=color_map[c]) for c in clusters_prev]
         ax.legend(handles, clusters_prev, title=f"From ({prev_month_label})", bbox_to_anchor=(1.01, 1), loc='upper left')
 
     plt.tight_layout()
-    chart_path = os.path.join(output_dir, f"cluster_transition_chart_{curr_month_label}.png")
     plt.savefig(chart_path, dpi=300)
 
-    slack.uploadFile(chart_path, os.getenv("SLACK_CHANNEL"), comment=f"*Cluster Transition Chart* ({curr_month_label})", thread_ts=thread_ts)
-    # slack.uploadFile(count_path, os.getenv("SLACK_CHANNEL"), f"*Transition Count Matrix* ({curr_month_label})")
-    # slack.uploadFile(percent_path, os.getenv("SLACK_CHANNEL"), f"*Transition Percentage Matrix* ({curr_month_label})")
+    return chart_path, count_path, percent_path
