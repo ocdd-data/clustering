@@ -1,5 +1,9 @@
 # === Imports
 import os
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 from datetime import date, timedelta
 import pandas as pd
 from dotenv import load_dotenv
