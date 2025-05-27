@@ -14,10 +14,8 @@ jobs:
         region: ["SG", "KH"]
         include:
           - region: "SG"
-            query_id: 4737
             report_id: 4738
           - region: "KH"
-            query_id: 4747
             report_id: 4748
     runs-on: ubuntu-latest
     steps:
