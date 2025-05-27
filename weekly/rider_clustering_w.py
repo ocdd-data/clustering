@@ -84,18 +84,11 @@ def main():
     final_df.to_csv(output_path)
 
     slack = SlackBot()
-    slack.postMessage(
+    slack.uploadFilesWithComment(
+        files=[output_path],
         channel=slack_channel,
-        text=f"📊 Weekly Rider Segmentation Report for `{report_key}`"
+        initial_comment=f"📊 Weekly Rider Segmentation Report for `{report_key}`"
     )
-
-        # Upload file (no initial comment = no preview)
-    slack.uploadFile(
-        file=output_path,
-        channel=slack_channel,
-        comment="",  # prevents preview from showing
-    )
-
 
 if __name__ == "__main__":
     main()
