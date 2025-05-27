@@ -6,6 +6,7 @@ from sklearn.cluster import KMeans
 import joblib
 import numpy as np
 import os
+from datetime import datetime, timedelta
 
 ORDERED_CLUSTER_MAPPING = {
     0: 'Cluster 0 - New or Inactive Riders',
@@ -18,12 +19,13 @@ ORDERED_CLUSTER_MAPPING = {
 class RiderClusterTrainer:
     def __init__(self, n_clusters=5):
         self.k = n_clusters
-        self.features = ['frequency_count', 'total_trips', 'avg_trips_per_day']
+        self.features = ['count', 'trip', 'avg']
         self.scaler = StandardScaler()
         self.kmeans = KMeans(n_clusters=self.k, random_state=42, n_init='auto')
 
     def train(self, df: pd.DataFrame):
         df = df.dropna(subset=self.features)
+        df = df.drop(columns=["month"], errors="ignore")
         X_scaled = self.scaler.fit_transform(df[self.features])
         self.kmeans.fit(X_scaled)
 
@@ -47,19 +49,35 @@ class RiderClusterTrainer:
         joblib.dump(self.scaler, "models/scaler.pkl")
 
 
+def get_previous_quarter_dates(ref_date=None):
+    if ref_date is None:
+        ref_date = datetime.today()
+    first_day_current_quarter = datetime(ref_date.year, 3 * ((ref_date.month - 1) // 3) + 1, 1)
+    last_day_prev_quarter = first_day_current_quarter - timedelta(days=1)
+    first_day_prev_quarter = datetime(last_day_prev_quarter.year, 3 * ((last_day_prev_quarter.month - 1) // 3) + 1, 1)
+    return first_day_prev_quarter.date(), last_day_prev_quarter.date()
+
 def main():
     load_dotenv()
+
+    date_start, date_end = get_previous_quarter_dates()
+    print(f"Using data from {date_start} to {date_end}")
 
     redash = Redash(
         key=os.getenv("REDASH_API_KEY"),
         base_url=os.getenv("REDASH_BASE_URL")
     )
 
-    query = Query(3819)
+    query = Query(4737, params={
+        "Date Range": {
+            "start": date_start.strftime("%Y-%m-%d"),
+            "end": date_end.strftime("%Y-%m-%d")
+        }
+    })
+
+
     redash.run_queries([query])
     df = redash.get_result(query.id)
-
-    print("Pulled training data:", df.shape)
 
     trainer = RiderClusterTrainer()
     trainer.train(df)
@@ -68,3 +86,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+    
