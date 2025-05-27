@@ -26,7 +26,7 @@ jobs:
       - name: Set up environment
         run: |
           echo "REDASH_API_KEY=${{ secrets.REDASH_API_KEY }}" >> .env
-          echo "REDASH_URL=${{ secrets.REDASH_URL }}" >> .env
+          echo "REDASH_URL=${{ secrets.REDASH_BASE_URL }}" >> .env
           echo "SLACK_TOKEN=${{ secrets.SLACK_TOKEN }}" >> .env
           echo "SLACK_CHANNEL=${{ secrets.SLACK_CHANNEL }}" >> .env
 
