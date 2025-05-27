@@ -1,23 +1,25 @@
 import os
-import time
-import ast
 import pandas as pd
 import numpy as np
-import re
 from pathlib import Path
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
+
 from utils.helpers import Query, Redash
 from utils.slack import SlackBot
 from utils.transition import generate_cluster_transition_barchart
 
+
 class RiderClusterPredictor:
     def __init__(self, models_dir: Path):
-        scaler_def = pd.read_csv(models_dir / "scaler_params.csv")
+        region = os.getenv("REGION")
+        self.models_dir = models_dir / region
+
+        scaler_def = pd.read_csv(self.models_dir / "scaler_params.csv")
         self.scaler_mean = scaler_def.set_index("Feature")["Mean"]
         self.scaler_var = scaler_def.set_index("Feature")["Variance"]
 
-        cluster_def = pd.read_csv(models_dir / "cluster_centroids.csv")
+        cluster_def = pd.read_csv(self.models_dir / "cluster_centroids.csv")
         self.centroids = cluster_def[self.scaler_mean.index.tolist()].values
         self.label_map = dict(zip(cluster_def["Cluster"], cluster_def["Description"]))
 
@@ -29,6 +31,7 @@ class RiderClusterPredictor:
         df['cluster'] = np.argmin(dists, axis=1)
         df['cluster_name'] = df['cluster'].map(self.label_map)
         return df
+
 
 def generate_cluster_summary_with_diff(df_curr, df_prev, label_map, month_label, prev_label, region):
     curr_counts = df_curr['cluster'].value_counts().rename("curr_count")
@@ -53,10 +56,13 @@ def generate_cluster_summary_with_diff(df_curr, df_prev, label_map, month_label,
 
     return "\n".join(lines)
 
+
 def main():
     load_dotenv()
 
-    region = "SG"
+    region = os.getenv("REGION")
+    query_id = int(os.getenv("QUERY_ID"))
+
     today = datetime.today()
     first_day_last_month = (today.replace(day=1) - timedelta(days=1)).replace(day=1)
     first_day_prev_month = (first_day_last_month - timedelta(days=1)).replace(day=1)
@@ -65,7 +71,7 @@ def main():
     prev_month_label = first_day_prev_month.strftime("%b_%Y")
     redash_param_date = first_day_last_month.strftime("%Y-%m-%d")
 
-    output_dir = "output"
+    output_dir = f"output/{region}"
     os.makedirs(output_dir, exist_ok=True)
 
     client = Redash(os.getenv("REDASH_API_KEY"), os.getenv("REDASH_BASE_URL"))
@@ -73,7 +79,7 @@ def main():
 
     pipeline = RiderClusterPredictor(models_dir=Path("models"))
 
-    query = Query(4738, params={"date": redash_param_date})
+    query = Query(query_id, params={"date": redash_param_date})
     client.run_queries([query])
     df_all = client.get_result(query.id)
     df_all['month'] = pd.to_datetime(df_all['month']).dt.date
@@ -88,12 +94,9 @@ def main():
         df_curr_clustered, df_prev_clustered, pipeline.label_map,
         output_month, prev_month_label, region
     )
+
     chart_path, count_path, percent_path = generate_cluster_transition_barchart(
-        df_prev_clustered,
-        df_curr_clustered,
-        prev_month_label,
-        output_month,
-        output_dir
+        df_prev_clustered, df_curr_clustered, prev_month_label, output_month, output_dir
     )
 
     main_ts = slack.uploadFilesWithComment(
@@ -105,12 +108,12 @@ def main():
     curr_path = f"{output_dir}/rider_clusters_{region}_{output_month}.csv"
     df_curr_clustered.to_csv(curr_path, index=False)
 
-
-    slack.uploadFile(curr_path, os.getenv("SLACK_CHANNEL"), comment="📎 Rider Cluster Assignments CSV", thread_ts=main_ts)
-
-    # slack.uploadFile(count_path, os.getenv("SLACK_CHANNEL"), comment="📊 Transition Count Matrix CSV", thread_ts=main_ts)
-
-    # slack.uploadFile(percent_path, os.getenv("SLACK_CHANNEL"), comment="📈 Transition Percentage Matrix CSV", thread_ts=main_ts)
+    slack.uploadFile(
+        curr_path,
+        os.getenv("SLACK_CHANNEL"),
+        comment="📎 Rider Cluster Assignments CSV",
+        thread_ts=main_ts
+    )
 
 
 if __name__ == "__main__":
