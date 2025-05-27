@@ -1,17 +1,25 @@
-# This workflow automically updates Clustering Model every Quarter
 name: Rider Clustering Quarterly Training
 
 on:
   schedule:
-    - cron: '0 0 1 1,4,7,10 *'  # At 00:00 on Jan, Apr, Jul, Oct 1st
+    - cron: '0 0 1 1,4,7,10 *'  # Runs at 00:00 on Jan, Apr, Jul, Oct 1st
   workflow_dispatch:
-  
+
 permissions:
   contents: write
 
 jobs:
   run-pipeline-script:
     runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        region: [SG, KH]
+        include:
+          - region: SG
+            query_id: 4737
+          - region: KH
+            query_id: 4747
 
     steps:
       - name: Checkout repo content
@@ -26,6 +34,8 @@ jobs:
         run: |
           echo "REDASH_BASE_URL=${{ secrets.REDASH_BASE_URL }}" >> .env
           echo "REDASH_API_KEY=${{ secrets.REDASH_API_KEY }}" >> .env
+          echo "REGION=${{ matrix.region }}" >> .env
+          echo "QUERY_ID=${{ matrix.query_id }}" >> .env
 
       - name: Install python packages
         run: |
@@ -39,8 +49,8 @@ jobs:
         run: |
           git config --global user.name 'github-actions'
           git config --global user.email 'github-actions@github.com'
-          git add models/*.csv models/*.pkl
-          git commit -m "[Automated] Quarterly model update $(date +'%Y-%m-%d')"
+          git add models/${{ matrix.region }}/*.csv models/${{ matrix.region }}/*.pkl
+          git commit -m "[Automated] Quarterly model update for ${{ matrix.region }} - $(date +'%Y-%m-%d')"
           git push origin main
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
