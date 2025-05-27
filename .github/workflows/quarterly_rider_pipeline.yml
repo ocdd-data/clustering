@@ -5,6 +5,9 @@ on:
   schedule:
     - cron: '0 0 1 1,4,7,10 *'  # At 00:00 on Jan, Apr, Jul, Oct 1st
   workflow_dispatch:
+  
+permissions:
+  contents: write
 
 jobs:
   run-pipeline-script:
