@@ -46,7 +46,7 @@ class SlackBot:
             try:
                 result = self.client.files_upload_v2(
                     channel=channel,
-                    file=file_path[0],
+                    file=file_path,
                     initial_comment=initial_comment if idx == 0 else None
                 )
                 self.logger.info(result)
