@@ -93,7 +93,8 @@ def main():
         df_curr_clustered,
         prev_month_label,
         output_month,
-        output_dir
+        output_dir,
+        slack
     )
 
     main_ts = slack.uploadFilesWithComment(
