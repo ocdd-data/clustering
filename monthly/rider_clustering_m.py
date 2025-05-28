@@ -9,7 +9,6 @@ from utils.helpers import Query, Redash
 from utils.slack import SlackBot
 from utils.transition import generate_cluster_transition_barchart
 
-
 class RiderClusterPredictor:
     def __init__(self, models_dir: Path):
         region = os.getenv("REGION")
@@ -31,7 +30,6 @@ class RiderClusterPredictor:
         df['cluster'] = np.argmin(dists, axis=1)
         df['cluster_name'] = df['cluster'].map(self.label_map)
         return df
-
 
 def generate_cluster_summary_with_diff(df_curr, df_prev, label_map, month_label, prev_label, region):
     curr_counts = df_curr['cluster'].value_counts().rename("curr_count")
@@ -55,7 +53,6 @@ def generate_cluster_summary_with_diff(df_curr, df_prev, label_map, month_label,
         lines.append(f"> *{row['cluster_name']}*: *{row['curr_count']:,}* ({delta_str})")
 
     return "\n".join(lines)
-
 
 def main():
     load_dotenv()
@@ -104,14 +101,18 @@ def main():
         channel=os.getenv("SLACK_CHANNEL"),
         initial_comment=summary_text
     )
-    
+
+    time.sleep(2) 
+
     curr_path = f"{output_dir}/rider_clusters_{region}_{output_month}.csv"
     df_curr_clustered.to_csv(curr_path, index=False)
-   
+
     slack.uploadFilesWithComment(
         files=[curr_path],
         channel=os.getenv("SLACK_CHANNEL"),
-        initial_comment="📎 Rider Cluster Assignment CSV"
+        initial_comment="📎 Rider Cluster Assignment CSV",
+        thread_ts=main_ts
     )
+
 if __name__ == "__main__":
     main()
