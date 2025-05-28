@@ -31,4 +31,4 @@ jobs:
           echo "SLACK_CHANNEL=${{ secrets.SLACK_CHANNEL }}" >> .env
 
       - name: Run clustering script
-        run: python -m weekly/rider_clustering_w
+        run: python -m weekly.rider_clustering_w
