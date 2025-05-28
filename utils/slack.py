@@ -43,23 +43,25 @@ class SlackBot:
 
     def uploadFilesWithComment(self, files: list, channel: str, initial_comment: str = "") -> str:
         ts_to_return = None
-        for idx, file_path in enumerate(files):
-            try:
-                response = self.client.files_upload_v2(
-                    channel=channel,
-                    file=file_path,
-                    initial_comment=initial_comment if idx == 0 else None
-                )
-                self.logger.info(response)
-    
-                if ts_to_return is None:
-                    file_info = response.get("file", {})
-                    shares = file_info.get("shares", {}).get("private", {}).get(channel)
-                    if shares and len(shares) > 0:
-                        ts_to_return = shares[0].get("ts")
-    
-            except SlackApiError as e:
-                self.logger.error(f"Error uploading file {file_path}: {e}")
+        try:
+            thread_ts = None
+            for idx, file_path in enumerate(files):
+                if idx == 0:
+                    response = self.client.files_upload_v2(
+                        channel=channel,
+                        file=file_path,
+                        initial_comment=initial_comment
+                    )
+                    thread_ts = response["file"]["timestamp"]
+                else:
+                    response = self.client.files_upload_v2(
+                        channel=channel,
+                        file=file_path,
+                        thread_ts=thread_ts
+                    )
+            ts_to_return = thread_ts
+        except SlackApiError as e:
+            self.logger.error(f"Error uploading files: {e}")
         return ts_to_return
 
 
