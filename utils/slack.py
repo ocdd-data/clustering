@@ -1,7 +1,6 @@
 import os
 from io import StringIO
 from logging import Logger
-
 import pandas as pd
 import requests
 from dotenv import load_dotenv
@@ -24,22 +23,28 @@ class SlackBot:
         except SlackApiError as e:
             self.logger.error(f"Error posting message: {e}")
             return None
-
-    def uploadFile(self, file: str, channel: str, comment: str = "", thread_ts: str = None) -> str:
+        
+    def uploadFilesWithComment(self, files: list, channel: str, initial_comment: str = "", thread_ts: str = None) -> str:
+        ts_to_return = None
         try:
-            response = self.client.files_upload_v2(
-                channel=channel,
-                file=file,
-                initial_comment=comment if not thread_ts else None,
-                thread_ts=thread_ts
-            )
-            self.logger.info(response)
+            for idx, file_path in enumerate(files):
+                upload_kwargs = {
+                    "channel": channel,
+                    "file": file_path,
+                }
+                if idx == 0 and thread_ts is None:
+                    upload_kwargs["initial_comment"] = initial_comment
+                else:
+                    upload_kwargs["thread_ts"] = thread_ts
 
-            return response["file"]["timestamp"]
-
+                response = self.client.files_upload_v2(**upload_kwargs)
+                if idx == 0 and thread_ts is None:
+                    thread_ts = response["file"]["timestamp"]
+            ts_to_return = thread_ts
         except SlackApiError as e:
-            self.logger.error(f"Error uploading file: {e}")
-            return None
+            self.logger.error(f"Error uploading files: {e}")
+        return ts_to_return
+
 
     def uploadFilesWithComment(self, files: list, channel: str, initial_comment: str = "") -> str:
             ts_to_return = None
