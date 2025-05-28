@@ -19,11 +19,27 @@ class SlackBot:
         try:
             response = self.client.chat_postMessage(channel=channel, text=text)
             self.logger.info(response)
-            return response["ts"]  
+            return response["ts"]
         except SlackApiError as e:
             self.logger.error(f"Error posting message: {e}")
             return None
-        
+
+    def uploadFile(self, file: str, channel: str, comment: str = "", thread_ts: str = None) -> str:
+            try:
+                response = self.client.files_upload_v2(
+                    channel=channel,
+                    file=file,
+                    initial_comment=comment if thread_ts is None else None,
+                    thread_ts=thread_ts
+                )
+                self.logger.info(response)
+
+                return response["file"]["timestamp"]
+
+            except SlackApiError as e:
+                self.logger.error(f"Error uploading file: {e}")
+                return None
+
     def uploadFilesWithComment(self, files: list, channel: str, initial_comment: str = "", thread_ts: str = None) -> str:
         ts_to_return = None
         try:
@@ -38,37 +54,14 @@ class SlackBot:
                     upload_kwargs["thread_ts"] = thread_ts
 
                 response = self.client.files_upload_v2(**upload_kwargs)
+
                 if idx == 0 and thread_ts is None:
                     thread_ts = response["file"]["timestamp"]
+
             ts_to_return = thread_ts
         except SlackApiError as e:
             self.logger.error(f"Error uploading files: {e}")
         return ts_to_return
-
-
-    def uploadFilesWithComment(self, files: list, channel: str, initial_comment: str = "") -> str:
-            ts_to_return = None
-            try:
-
-                thread_ts = None
-                for idx, file_path in enumerate(files):
-                    if idx == 0:
-                        response = self.client.files_upload_v2(
-                            channel=channel,
-                            file=file_path,
-                            initial_comment=initial_comment
-                        )
-                        thread_ts = response["file"]["timestamp"]
-                    else:
-                        response = self.client.files_upload_v2(
-                            channel=channel,
-                            file=file_path,
-                            thread_ts=thread_ts
-                        )
-                ts_to_return = thread_ts
-            except SlackApiError as e:
-                self.logger.error(f"Error uploading files: {e}")
-            return ts_to_return
 
     def to_pandas(self, url: str) -> pd.DataFrame:
         response = requests.get(url, headers={'Authorization': f'Bearer {os.getenv("SLACK_TOKEN")}'}, timeout=60)
