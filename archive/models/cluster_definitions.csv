@@ -1,0 +1,6 @@
+,Cluster,Description,Centroid
+0,0,Cluster 0 - New or Inactive Riders,[-0.56036708 -0.51151719 -0.54660528]
+1,1,Cluster 1 - Occasional Riders,[-0.33386851 -0.08904953  2.01037383]
+2,2,Cluster 2 - Moderately Active Passengers,[ 0.33288458  0.15368693 -0.00110452]
+3,3,Cluster 3 - Regular Riders,[1.80798502 1.50265123 0.58986764]
+4,4,Cluster 4 - Highly Active Passengers,[3.5383722  4.30226757 2.21723281]

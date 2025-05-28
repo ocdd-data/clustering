@@ -1,0 +1,45 @@
+# This is a basic workflow to help you get started with Actions
+name: Rider Clustering Monthly
+
+# Controls when the workflow will run
+on:
+  schedule:
+    - cron: '00 00 1 * *'
+  workflow_dispatch:
+
+jobs:
+  run-monthly-clustering:
+    strategy:
+      matrix:
+        region: ["SG", "KH"]
+        include:
+          - region: "SG"
+            report_id: 4738
+          - region: "KH"
+            report_id: 4748
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Create .env file
+        run: |
+          echo "REDASH_BASE_URL=${{ secrets.REDASH_BASE_URL }}" >> .env
+          echo "REDASH_API_KEY=${{ secrets.REDASH_API_KEY }}" >> .env
+          echo "SLACK_TOKEN=${{ secrets.SLACK_TOKEN }}" >> .env
+          echo "SLACK_CHANNEL=${{ secrets.SLACK_CHANNEL }}" >> .env
+          echo "REGION=${{ matrix.region }}" >> .env
+          echo "QUERY_ID=${{ matrix.query_id }}" >> .env
+          echo "REPORT_ID=${{ matrix.report_id }}" >> .env
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+
+      - name: Run pipeline
+        run: python -m monthly.rider_clustering_m
