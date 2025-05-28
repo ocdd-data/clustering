@@ -5,7 +5,6 @@ import numpy as np
 from pathlib import Path
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
-
 from utils.helpers import Query, Redash
 from utils.slack import SlackBot
 from utils.transition import generate_cluster_transition_barchart
@@ -105,18 +104,14 @@ def main():
         channel=os.getenv("SLACK_CHANNEL"),
         initial_comment=summary_text
     )
-
+    
     curr_path = f"{output_dir}/rider_clusters_{region}_{output_month}.csv"
     df_curr_clustered.to_csv(curr_path, index=False)
-
-    time.sleep(5)
-
-    slack.uploadFile(
-        curr_path,
-        os.getenv("SLACK_CHANNEL"),
-        comment="📎 Rider Cluster Assignments CSV",
-        thread_ts=main_ts
+   
+    slack.uploadFilesWithComment(
+        files=[curr_path],
+        channel=os.getenv("SLACK_CHANNEL"),
+        initial_comment="📎 Rider Cluster Assignment CSV"
     )
-
 if __name__ == "__main__":
     main()
