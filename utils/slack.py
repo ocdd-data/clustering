@@ -41,9 +41,10 @@ class SlackBot:
             self.logger.error(f"Error uploading file: {e}")
             return None
 
-    def uploadFilesWithComment(self, files: list, channel: str, initial_comment: str = "") -> str:
+def uploadFilesWithComment(self, files: list, channel: str, initial_comment: str = "") -> str:
         ts_to_return = None
         try:
+
             thread_ts = None
             for idx, file_path in enumerate(files):
                 if idx == 0:
@@ -63,7 +64,6 @@ class SlackBot:
         except SlackApiError as e:
             self.logger.error(f"Error uploading files: {e}")
         return ts_to_return
-
 
     def to_pandas(self, url: str) -> pd.DataFrame:
         response = requests.get(url, headers={'Authorization': f'Bearer {os.getenv("SLACK_TOKEN")}'}, timeout=60)
