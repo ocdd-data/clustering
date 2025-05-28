@@ -97,7 +97,7 @@ def main():
     )
 
     chart_path, count_path, percent_path = generate_cluster_transition_barchart(
-        df_prev_clustered, df_curr_clustered, prev_month_label, output_month, output_dir
+        df_prev_clustered, df_curr_clustered, prev_month_label, output_month, output_dir, region
     )
 
     main_ts = slack.uploadFilesWithComment(

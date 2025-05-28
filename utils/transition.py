@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 import seaborn as sns
 
-def generate_cluster_transition_barchart(df_prev, df_curr, prev_month_label, curr_month_label, output_dir):
+def generate_cluster_transition_barchart(df_prev, df_curr, prev_month_label, curr_month_label, output_dir, region):
     df_prev = df_prev.rename(columns={"cluster": "cluster_prev"})
     df_curr = df_curr.rename(columns={"cluster": "cluster_curr"})
 
@@ -22,9 +22,9 @@ def generate_cluster_transition_barchart(df_prev, df_curr, prev_month_label, cur
 
     os.makedirs(output_dir, exist_ok=True)
 
-    count_path = os.path.join(output_dir, f"transition_counts_{curr_month_label}.csv")
-    percent_path = os.path.join(output_dir, f"transition_percents_{curr_month_label}.csv")
-    chart_path = os.path.join(output_dir, f"cluster_transition_chart_{curr_month_label}.png")
+    count_path = os.path.join(output_dir, f"transition_counts_{region}_{curr_month_label}.csv")
+    percent_path = os.path.join(output_dir, f"transition_percents_{region}_{curr_month_label}.csv")
+    chart_path = os.path.join(output_dir, f"cluster_transition_chart_{region}_{curr_month_label}.png")
 
     count_matrix.to_csv(count_path)
     percent_matrix.to_csv(percent_path)
@@ -35,12 +35,12 @@ def generate_cluster_transition_barchart(df_prev, df_curr, prev_month_label, cur
 
     fig, axes = plt.subplots(2, 1, figsize=(14, 14))
 
-    for ax, data, title, ylabel, is_percent in [
-        (axes[0], percent_matrix, f"{prev_month_label} → {curr_month_label} (% Riders)", "% of Riders", True),
-        (axes[1], count_matrix, f"{prev_month_label} → {curr_month_label} (Counts)", "Number of Riders", False)
+    for ax, data, title_suffix, ylabel, is_percent in [
+        (axes[0], percent_matrix, "(% Riders)", "% of Riders", True),
+        (axes[1], count_matrix, "(Counts)", "Number of Riders", False)
     ]:
         data.plot(kind='bar', stacked=True, ax=ax, color=[color_map[c] for c in clusters_prev], legend=False)
-        ax.set_title(title, fontweight='bold')
+        ax.set_title(f"{region} {prev_month_label} → {curr_month_label} {title_suffix}", fontweight='bold')
         ax.set_ylabel(ylabel)
         ax.set_xlabel(f"To Cluster ({curr_month_label})")
         ax.set_xticklabels(data.columns, rotation=0)
