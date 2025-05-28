@@ -14,9 +14,11 @@ jobs:
         region: ["SG", "KH"]
         include:
           - region: "SG"
-            report_id: 4738
+            query_id: 4769
+            report_id: 4770
           - region: "KH"
-            report_id: 4748
+            query_id: 4767
+            report_id: 4768
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repo
