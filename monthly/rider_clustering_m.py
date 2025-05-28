@@ -62,8 +62,8 @@ def main():
     load_dotenv()
 
     region = os.getenv("REGION")
-    query_id = int(os.getenv("REPORT_ID"))  # now using report ID
-
+    query_id = int(os.getenv("REPORT_ID"))  
+    
     today = datetime.today()
     first_day_last_month = (today.replace(day=1) - timedelta(days=1)).replace(day=1)
     first_day_prev_month = (first_day_last_month - timedelta(days=1)).replace(day=1)
@@ -110,6 +110,7 @@ def main():
     df_curr_clustered.to_csv(curr_path, index=False)
 
     time.sleep(5)
+
     slack.uploadFile(
         curr_path,
         os.getenv("SLACK_CHANNEL"),
