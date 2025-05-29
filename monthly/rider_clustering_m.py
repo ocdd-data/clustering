@@ -31,28 +31,62 @@ class RiderClusterPredictor:
         df['cluster_name'] = df['cluster'].map(self.label_map)
         return df
 
-def generate_cluster_summary_with_diff(df_curr, df_prev, label_map, month_label, prev_label, region):
-    curr_counts = df_curr['cluster'].value_counts().rename("curr_count")
-    prev_counts = df_prev['cluster'].value_counts().rename("prev_count")
-    diff_df = pd.concat([curr_counts, prev_counts], axis=1).fillna(0).astype(int)
-    diff_df["delta"] = diff_df["curr_count"] - diff_df["prev_count"]
-    diff_df["cluster_name"] = diff_df.index.map(label_map)
-
-    total_curr = df_curr.shape[0]
-    total_prev = df_prev.shape[0]
+def generate_cluster_summary_text(df_curr, df_prev, month_label, region):
+    total_curr = len(df_curr)
+    total_prev = len(df_prev)
     total_delta = total_curr - total_prev
+    total_pct = (total_delta / total_prev * 100) if total_prev else 0
     arrow = ":increase:" if total_delta > 0 else ":decrease:" if total_delta < 0 else "➖"
 
-    lines = [f"*{region} Rider Segmentation Report ({month_label}):*"]
-    lines.append(f"> *Total Riders*: *{total_curr:,}* ({arrow} {abs(total_delta):,})")
+    return (
+        f"*{region} Rider Segmentation Report ({month_label}):*\n"
+        f"*Total Riders: {total_curr:,}* ({arrow} {abs(total_delta):,} | {total_pct:+.2f}%)\n"
+    )
 
-    for idx, row in diff_df.sort_index().iterrows():
-        delta = row["delta"]
-        arrow = ":increase:" if delta > 0 else ":decrease:" if delta < 0 else "➖"
-        delta_str = f"{arrow} {abs(delta):,}"
-        lines.append(f"> *{row['cluster_name']}*: *{row['curr_count']:,}* ({delta_str})")
+def build_slack_attachments(df_curr, df_prev, label_map):
+    color_map = ["#FFB5A7", "#FFBE98", "#FCE5A1", "#A8E6C2", "#A7C7E7"]    
+    attachments = []
 
-    return "\n".join(lines)
+    for i, cluster in enumerate(sorted(df_curr['cluster'].unique())):
+        name = label_map[cluster]
+        color = color_map[i % len(color_map)]
+
+        curr_subset = df_curr[df_curr['cluster'] == cluster]
+        prev_subset = df_prev[df_prev['cluster'] == cluster]
+
+        curr_riders = len(curr_subset)
+        prev_riders = len(prev_subset)
+        delta_riders = curr_riders - prev_riders
+        pct_riders = (delta_riders / prev_riders * 100) if prev_riders else 0
+
+        curr_trips = curr_subset['count'].sum()
+        prev_trips = prev_subset['count'].sum()
+        delta_trips = curr_trips - prev_trips
+        pct_trips = (delta_trips / prev_trips * 100) if prev_trips else 0
+
+        avg_curr = curr_trips / curr_riders if curr_riders else 0
+        avg_prev = prev_trips / prev_riders if prev_riders else 0
+        delta_avg = avg_curr - avg_prev
+        pct_avg = (delta_avg / avg_prev * 100) if avg_prev else 0
+
+        def emoji(val): return ":increase:" if val > 0 else ":decrease:" if val < 0 else "➖"
+
+        fields_block = {
+            "title": f"*{name}*",
+            "value": (
+                f"*Total Riders:* {curr_riders:,} ({emoji(delta_riders)} {abs(delta_riders):,} | {pct_riders:+.2f}%)\n"
+                f"*Total Trips:* {curr_trips:,} ({emoji(delta_trips)} {abs(delta_trips):,} | {pct_trips:+.2f}%)\n"
+                f"*Avg Trips/Rider:* {avg_curr:.2f} ({emoji(delta_avg)} {abs(delta_avg):.2f} | {pct_avg:+.2f}%)"
+            ),
+            "short": False
+        }
+
+        attachments.append({
+            "color": color,
+            "fields": [fields_block]
+        })
+
+    return attachments
 
 def main():
     load_dotenv()
@@ -87,29 +121,35 @@ def main():
     df_prev_clustered = pipeline.assign(df_prev)
     df_curr_clustered = pipeline.assign(df_curr)
 
-    summary_text = generate_cluster_summary_with_diff(
-        df_curr_clustered, df_prev_clustered, pipeline.label_map,
-        output_month, prev_month_label, region
+    summary_text = generate_cluster_summary_text(df_curr_clustered, df_prev_clustered, output_month, region)
+    attachments = build_slack_attachments(df_curr_clustered, df_prev_clustered, pipeline.label_map)
+
+    response = slack.client.chat_postMessage(
+        channel=os.getenv("SLACK_CHANNEL"),
+        text=summary_text,
+        attachments=attachments
     )
+    main_ts = response["ts"]
 
     chart_path, count_path, percent_path = generate_cluster_transition_barchart(
         df_prev_clustered, df_curr_clustered, prev_month_label, output_month, output_dir, region
     )
 
-    main_ts = slack.uploadFilesWithComment(
-        files=[chart_path],
+    slack.client.files_upload_v2(
         channel=os.getenv("SLACK_CHANNEL"),
-        initial_comment=summary_text
+        file=chart_path,
+        initial_comment="📊 Cluster Transition Chart",
+        thread_ts=main_ts
     )
 
-    time.sleep(2) 
+    time.sleep(2)
 
     curr_path = f"{output_dir}/rider_clusters_{region}_{output_month}.csv"
     df_curr_clustered.to_csv(curr_path, index=False)
 
-    slack.uploadFilesWithComment(
-        files=[curr_path],
+    slack.client.files_upload_v2(
         channel=os.getenv("SLACK_CHANNEL"),
+        file=curr_path,
         initial_comment="📎 Rider Cluster Assignment CSV",
         thread_ts=main_ts
     )
