@@ -19,13 +19,16 @@ class RiderClusterPredictor:
         self.scaler_var = scaler_def.set_index("Feature")["Variance"]
 
         cluster_def = pd.read_csv(self.models_dir / "cluster_centroids.csv")
-        self.centroids = cluster_def[self.scaler_mean.index.tolist()].values
+        self.centroids = cluster_def["Centroid"].apply(eval).apply(np.array).tolist()
+        self.centroids = np.vstack(self.centroids)
+
         self.label_map = dict(zip(cluster_def["Cluster"], cluster_def["Description"]))
 
     def assign(self, df):
         X = df[self.scaler_mean.index].dropna()
         X_scaled = (X - self.scaler_mean) / np.sqrt(self.scaler_var)
         dists = np.linalg.norm(X_scaled.values[:, np.newaxis] - self.centroids, axis=2)
+
         df = df.copy()
         df['cluster'] = np.argmin(dists, axis=1)
         df['cluster_name'] = df['cluster'].map(self.label_map)
@@ -38,8 +41,9 @@ def generate_cluster_summary_text(df_curr, df_prev, month_label, region):
     total_pct = (total_delta / total_prev * 100) if total_prev else 0
     arrow = ":increase:" if total_delta > 0 else ":decrease:" if total_delta < 0 else "➖"
 
+    monthly_title = ":alphabet-white-m::alphabet-white-o::alphabet-white-n::alphabet-white-t::alphabet-white-h::alphabet-white-l::alphabet-white-y:"
     return (
-        f"*{region} Rider Segmentation Report ({month_label}):*\n"
+        f"{monthly_title} \n *{region} Rider Segmentation Report ({month_label}):*\n"
         f"*Total Riders: {total_curr:,}* ({arrow} {abs(total_delta):,} | {total_pct:+.2f}%)\n"
     )
 
@@ -98,8 +102,8 @@ def main():
     first_day_last_month = (today.replace(day=1) - timedelta(days=1)).replace(day=1)
     first_day_prev_month = (first_day_last_month - timedelta(days=1)).replace(day=1)
 
-    output_month = first_day_last_month.strftime("%b_%Y")
-    prev_month_label = first_day_prev_month.strftime("%b_%Y")
+    output_month = first_day_last_month.strftime("%b %Y")
+    prev_month_label = first_day_prev_month.strftime("%b %Y")
     redash_param_date = first_day_last_month.strftime("%Y-%m-%d")
 
     output_dir = f"output/{region}"
