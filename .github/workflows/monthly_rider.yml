@@ -43,5 +43,10 @@ jobs:
         run: |
           pip install -r requirements.txt
 
+      - name: Run training pipeline
+        run: |
+          # Comment this out later
+          python -m pipeline
+
       - name: Run pipeline
         run: python -m monthly.rider_clustering_m
