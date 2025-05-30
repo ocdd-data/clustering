@@ -43,7 +43,7 @@ jobs:
         run: |
           pip install -r requirements.txt
 
-      - name: Run training pipeline
+      - name: Run training utils.pipeline
         run: |
           # Comment this out later
           python -m pipeline
