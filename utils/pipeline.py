@@ -23,39 +23,45 @@ class RiderClusterTrainer:
         self.scaler = StandardScaler()
         self.kmeans = KMeans(n_clusters=self.k, random_state=42, n_init='auto')
 
+    ORDERED_CLUSTER_MAPPING = {
+        0: 'Cluster 0 - New or Inactive Riders',
+        1: 'Cluster 1 - Occasional Riders',
+        2: 'Cluster 2 - Moderately Active Passengers',
+        3: 'Cluster 3 - Regular Riders',
+        4: 'Cluster 4 - Highly Active Passengers'
+    }
     def train(self, df: pd.DataFrame):
         df = df.dropna(subset=self.features)
         X_scaled = self.scaler.fit_transform(df[self.features])
         self.kmeans.fit(X_scaled)
 
         centroids = pd.DataFrame(self.kmeans.cluster_centers_, columns=self.features)
-        centroids['Cluster'] = centroids.index
+        centroids['original_cluster'] = centroids.index
         centroids['activity_score'] = centroids[self.features].sum(axis=1)
 
-        sorted_clusters = centroids.sort_values(by='activity_score').reset_index(drop=True)
-        description_map = {
-            row['Cluster']: ORDERED_CLUSTER_MAPPING[i]
-            for i, row in sorted_clusters.iterrows()
-        }
-        centroids['Description'] = centroids['Cluster'].map(description_map)
+        centroids = centroids.sort_values(by='count').reset_index(drop=True)
 
-        region_dir = Path("models") / os.getenv("REGION")
-        region_dir.mkdir(parents=True, exist_ok=True)
+        centroids['Cluster'] = range(len(centroids))
+        centroids['Description'] = centroids['Cluster'].map(ORDERED_CLUSTER_MAPPING)
+
+        raw_to_new = dict(zip(centroids['original_cluster'], centroids['Cluster']))
 
         centroids['Centroid'] = centroids[self.features].values.tolist()
-        centroids[self.features + ['Cluster', 'Description']].to_csv(region_dir / "cluster_centroids.csv", index=False)
+        cluster_def_path = Path("models") / os.getenv("REGION")
+        cluster_def_path.mkdir(parents=True, exist_ok=True)
+
+        centroids[['Cluster', 'Description', 'Centroid']].to_csv(cluster_def_path / "cluster_centroids.csv", index=False)
 
         scaler_df = pd.DataFrame({
             'Feature': self.features,
             'Mean': self.scaler.mean_,
             'Variance': self.scaler.var_
         })
-        scaler_df.to_csv(region_dir / "scaler_params.csv", index=False)
+        scaler_df.to_csv(cluster_def_path / "scaler_params.csv", index=False)
 
-        joblib.dump(self.kmeans, region_dir / "kmeans_model.pkl")
-        joblib.dump(self.scaler, region_dir / "scaler.pkl")
-
-
+        joblib.dump(self.kmeans, cluster_def_path / "kmeans_model.pkl")
+        joblib.dump(self.scaler, cluster_def_path / "scaler.pkl")
+        
 def main():
     load_dotenv()
 
