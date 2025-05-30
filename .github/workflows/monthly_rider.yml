@@ -46,7 +46,7 @@ jobs:
       - name: Run training utils.pipeline
         run: |
           # Comment this out later
-          python -m pipeline
+          python -m utils.pipeline
 
-      - name: Run pipeline
+      - name: Run main clustering
         run: python -m monthly.rider_clustering_m
