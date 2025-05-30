@@ -166,8 +166,8 @@ def main():
         channel=slack_channel,
         text=(
             "*:alphabet-white-w::alphabet-white-e::alphabet-white-e:"
-            ":alphabet-white-k::alphabet-white-l::alphabet-white-y:\n"
-            "Rider Segmentation Report* \n"
+            ":alphabet-white-k::alphabet-white-l::alphabet-white-y:*\n"
+            "*Rider Segmentation Report*\n"
             f"`{curr}` vs `{prev}`"
         ),
         attachments=attachments
