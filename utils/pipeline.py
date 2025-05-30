@@ -29,25 +29,32 @@ class RiderClusterTrainer:
         self.kmeans.fit(X_scaled)
 
         centroids = pd.DataFrame(self.kmeans.cluster_centers_, columns=self.features)
-        centroids['activity_score'] = centroids[self.features].sum(axis=1)
-        centroids = centroids.sort_values(by='activity_score').reset_index(drop=True)
         centroids['Cluster'] = centroids.index
-        centroids['Description'] = centroids['Cluster'].map(ORDERED_CLUSTER_MAPPING)
+        centroids['activity_score'] = centroids[self.features].sum(axis=1)
 
-        scaler_df = pd.DataFrame({
-            'Feature': self.features,
-            'Mean': self.scaler.mean_,
-            'Variance': self.scaler.var_
-        })
+        sorted_clusters = centroids.sort_values(by='activity_score').reset_index(drop=True)
+        description_map = {
+            row['Cluster']: ORDERED_CLUSTER_MAPPING[i]
+            for i, row in sorted_clusters.iterrows()
+        }
+        centroids['Description'] = centroids['Cluster'].map(description_map)
 
         region_dir = Path("models") / os.getenv("REGION")
         region_dir.mkdir(parents=True, exist_ok=True)
 
         centroids['Centroid'] = centroids[self.features].values.tolist()
         centroids[self.features + ['Cluster', 'Description']].to_csv(region_dir / "cluster_centroids.csv", index=False)
+
+        scaler_df = pd.DataFrame({
+            'Feature': self.features,
+            'Mean': self.scaler.mean_,
+            'Variance': self.scaler.var_
+        })
         scaler_df.to_csv(region_dir / "scaler_params.csv", index=False)
+
         joblib.dump(self.kmeans, region_dir / "kmeans_model.pkl")
         joblib.dump(self.scaler, region_dir / "scaler.pkl")
+
 
 def main():
     load_dotenv()
