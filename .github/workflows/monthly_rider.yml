@@ -42,11 +42,11 @@ jobs:
       - name: Install dependencies
         run: |
           pip install -r requirements.txt
-
-      - name: Run training utils.pipeline
-        run: |
-          # Comment this out later
-          python -m utils.pipeline
+          
+      #     uncomment to run
+      # - name: Run training utils.pipeline
+      #   run: |
+      #     python -m utils.pipeline
 
       - name: Run main clustering
         run: python -m monthly.rider_clustering_m
