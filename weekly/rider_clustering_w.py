@@ -164,7 +164,11 @@ def main():
 
     response = slack.client.chat_postMessage(
         channel=slack_channel,
-        text=f"📊 *Weekly Rider Segmentation Report* \n`{curr}` vs `{prev}`",
+        text=(
+            "📊 *:alphabet-white-w::alphabet-white-e::alphabet-white-e:"
+            ":alphabet-white-k::alphabet-white-l::alphabet-white-y: Rider Segmentation Report* \n"
+            f"`{curr}` vs `{prev}`"
+        ),
         attachments=attachments
     )
 
