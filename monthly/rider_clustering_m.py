@@ -43,7 +43,7 @@ def generate_cluster_summary_text(df_curr, df_prev, month_label, region):
 
     monthly_title = ":alphabet-white-m::alphabet-white-o::alphabet-white-n::alphabet-white-t::alphabet-white-h::alphabet-white-l::alphabet-white-y:"
     return (
-        f"{monthly_title} \n*{region} Rider Segmentation Report ({month_label}):*\n"
+        f"{monthly_title}\n*{region} Rider Segmentation Report ({month_label}):*\n"
         f"*Total Riders: {total_curr:,}* ({arrow} {abs(total_delta):,} | {total_pct:+.2f}%)\n"
     )
 
