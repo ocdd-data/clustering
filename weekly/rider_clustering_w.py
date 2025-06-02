@@ -168,7 +168,9 @@ def main():
             "*:alphabet-white-w::alphabet-white-e::alphabet-white-e:"
             ":alphabet-white-k::alphabet-white-l::alphabet-white-y:*\n"
             "*Rider Segmentation Report*\n"
-            f"`{curr}` vs `{prev}`"
+            f"`{curr}` (covers {period_start} → {period_end})\n"
+            f"vs\n"
+            f"`{prev}` (covers {prev_start} → {prev_end})"
         ),
         attachments=attachments
     )
