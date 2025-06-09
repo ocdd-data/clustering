@@ -60,6 +60,11 @@ def main():
     trip_df = pd.DataFrame({prev: data[prev]["trips"], curr: data[curr]["trips"]})
     avg_df = pd.DataFrame({prev: data[prev]["avg"], curr: data[curr]["avg"]})
 
+    ordered_index = sorted([c for c in count_df.index if c != "Total"])
+    count_df = count_df.reindex(ordered_index + ["Total"])
+    trip_df = trip_df.reindex(ordered_index + ["Total"])
+    avg_df = avg_df.reindex(ordered_index + ["Total"])
+
     count_delta = (count_df[curr] - count_df[prev]).astype(int)
     count_pct = ((count_delta / count_df[prev]) * 100).round(2)
 
