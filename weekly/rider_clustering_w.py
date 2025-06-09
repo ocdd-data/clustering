@@ -1,9 +1,5 @@
 # === Imports
 import os
-import sys
-
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
 from datetime import date, timedelta
 
 import pandas as pd
@@ -140,7 +136,7 @@ def main():
     slack = SlackBot()
 
     attachments = []
-    for i, cluster in count_df.index.drop("Total"):
+    for i, cluster in enumerate(count_df.index.drop("Total")):
         color = color_map[i % len(color_map)]
 
         def get_emoji(val):
@@ -174,9 +170,9 @@ def main():
             "*:alphabet-white-w::alphabet-white-e::alphabet-white-e:"
             ":alphabet-white-k::alphabet-white-l::alphabet-white-y:*\n"
             "*Rider Segmentation Report*\n"
-            f"`{curr}` (covers {period_start} → {period_end})\n"
+            f"`{curr}` ({period_start} → {period_end})\n"
             f"vs\n"
-            f"`{prev}` (covers {prev_start} → {prev_end})"
+            f"`{prev}` ({prev_start} → {prev_end})"
         ),
         attachments=attachments
     )
