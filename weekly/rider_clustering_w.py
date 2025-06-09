@@ -74,54 +74,42 @@ def main():
 
     # === Format CSV Report (only show "Total" for counts and movement impact)
     records = []
-
+    
     # Section 1: Weekly Cluster Counts (Rolling 4-Week View)
     records.append(["Weekly Cluster Counts (Rolling 4-Week View)", ""])
     for cluster in count_df.index:
         records.append([cluster, count_df[curr][cluster]])
     records.append(["", ""])
     records.append(["", ""])
-
+    
     # Section 2: Weekly Cluster Counts Δ by Cluster
     records.append(["Weekly Cluster Counts Δ by Cluster", ""])
-    for cluster in count_df.index:
+    for cluster in count_df.index.drop("Total"):
         records.append([f"{cluster} (Δ)", count_delta[cluster]])
     records.append(["", ""])
-    records.append(["", ""])
-
+    
     # Section 3: Total Trips by Cluster
     records.append(["Total Trips by Cluster", ""])
     for cluster in trip_df.index.drop("Total"):
         records.append([cluster, trip_df[curr][cluster]])
     records.append(["", ""])
-    records.append(["", ""])
-
+    
     # Section 4: Total Trips Δ by Cluster
     records.append(["Total Trips Δ by Cluster", ""])
     for cluster in trip_df.index.drop("Total"):
         records.append([f"{cluster} (Δ)", trip_delta[cluster]])
     records.append(["", ""])
-    records.append(["", ""])
-
+    
     # Section 5: Avg Total Trips per Rider
     records.append(["Avg Total Trips per Rider", ""])
     for cluster in avg_df.index.drop("Total"):
         records.append([cluster, avg_df[curr][cluster]])
     records.append(["", ""])
-    records.append(["", ""])
-
+    
     # Section 6: Avg Total Trips Δ by Cluster
     records.append(["Avg Total Trips Δ by Cluster", ""])
     for cluster in avg_df.index.drop("Total"):
         records.append([f"{cluster} (Δ)", avg_delta[cluster]])
-    records.append(["", ""])
-    records.append(["", ""])
-
-    # Section 7: Estimated Movement Impact by Cluster
-    records.append(["Estimated Movement Impact by Cluster", ""])
-    for cluster in movement_impact.index:
-        records.append([cluster, movement_impact[cluster]])
-    records.append(["", ""])
     records.append(["", ""])
 
     # === Save to CSV
