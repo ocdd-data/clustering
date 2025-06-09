@@ -1,16 +1,17 @@
 # === Imports
 import os
 import sys
-import os
+
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from datetime import date, timedelta
+
 import pandas as pd
 from dotenv import load_dotenv
-from collections import defaultdict
-from utils.helpers import Redash, Query
-from utils.slack import SlackBot
+
 from models.clustering_weekly import get_redash_data
+from utils.helpers import Redash
+from utils.slack import SlackBot
 
 
 def main():
@@ -31,6 +32,8 @@ def main():
         return start, end
 
     data = {}
+    period_bounds = {}
+
     for week in [last_monday, this_monday]:
         start, end = get_bounds(week)
         df, stats = get_redash_data(start=start, end=end, redash=redash, query_id=query_id, return_cluster_stats=True)
@@ -41,6 +44,8 @@ def main():
         cluster_counts = df['Cluster_Description'].value_counts().to_dict()
         cluster_counts["Total"] = len(df)
         stats_key = week.strftime("%Y-%m-%d")
+        period_bounds[stats_key] = (start, end)
+
         stats.loc[stats_key, "Total"] = df["total"].sum()
         avg_trips = (stats.loc[stats_key].drop("Total") / pd.Series(cluster_counts).drop("Total")).round(2)
         avg_trips["Total"] = stats.loc[stats_key, "Total"] / cluster_counts["Total"]
@@ -52,6 +57,8 @@ def main():
         }
 
     prev, curr = sorted(data.keys())
+    prev_start, prev_end = period_bounds[prev]
+    period_start, period_end = period_bounds[curr]
 
     count_df = pd.DataFrame({prev: data[prev]["count"], curr: data[curr]["count"]})
     trip_df = pd.DataFrame({prev: data[prev]["trips"], curr: data[curr]["trips"]})
@@ -72,49 +79,49 @@ def main():
     # === Format CSV Report (only show "Total" for counts and movement impact)
     records = []
 
-    # Section 1: Weekly Cluster Counts (include Total)
+    # Section 1: Weekly Cluster Counts (Rolling 4-Week View)
     records.append(["Weekly Cluster Counts (Rolling 4-Week View)", ""])
     for cluster in count_df.index:
         records.append([cluster, count_df[curr][cluster]])
     records.append(["", ""])
     records.append(["", ""])
 
-    # Section 2: Weekly Cluster Counts Δ (include Total)
+    # Section 2: Weekly Cluster Counts Δ by Cluster
     records.append(["Weekly Cluster Counts Δ by Cluster", ""])
     for cluster in count_df.index:
         records.append([f"{cluster} (Δ)", count_delta[cluster]])
     records.append(["", ""])
     records.append(["", ""])
 
-    # Section 3: Total Trips by Cluster (exclude Total)
+    # Section 3: Total Trips by Cluster
     records.append(["Total Trips by Cluster", ""])
     for cluster in trip_df.index.drop("Total"):
         records.append([cluster, trip_df[curr][cluster]])
     records.append(["", ""])
     records.append(["", ""])
 
-    # Section 4: Total Trips Δ by Cluster (exclude Total)
+    # Section 4: Total Trips Δ by Cluster
     records.append(["Total Trips Δ by Cluster", ""])
     for cluster in trip_df.index.drop("Total"):
         records.append([f"{cluster} (Δ)", trip_delta[cluster]])
     records.append(["", ""])
     records.append(["", ""])
 
-    # Section 5: Avg Total Trips per Rider (exclude Total)
+    # Section 5: Avg Total Trips per Rider
     records.append(["Avg Total Trips per Rider", ""])
     for cluster in avg_df.index.drop("Total"):
         records.append([cluster, avg_df[curr][cluster]])
     records.append(["", ""])
     records.append(["", ""])
 
-    # Section 6: Avg Total Trips Δ by Cluster (exclude Total)
+    # Section 6: Avg Total Trips Δ by Cluster
     records.append(["Avg Total Trips Δ by Cluster", ""])
     for cluster in avg_df.index.drop("Total"):
         records.append([f"{cluster} (Δ)", avg_delta[cluster]])
     records.append(["", ""])
     records.append(["", ""])
 
-    # Section 7: Estimated Movement Impact by Cluster (include Total)
+    # Section 7: Estimated Movement Impact by Cluster
     records.append(["Estimated Movement Impact by Cluster", ""])
     for cluster in movement_impact.index:
         records.append([cluster, movement_impact[cluster]])
@@ -133,7 +140,7 @@ def main():
     slack = SlackBot()
 
     attachments = []
-    for i, cluster in enumerate(count_df.index.drop("Total")):
+    for i, cluster in count_df.index.drop("Total"):
         color = color_map[i % len(color_map)]
 
         def get_emoji(val):
@@ -160,7 +167,6 @@ def main():
             "color": color,
             "fields": [field]
         })
-
 
     response = slack.client.chat_postMessage(
         channel=slack_channel,
