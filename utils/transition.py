@@ -29,17 +29,25 @@ def generate_cluster_transition_barchart(df_prev, df_curr, prev_month_label, cur
     count_matrix.to_csv(count_path)
     percent_matrix.to_csv(percent_path)
 
-    clusters_prev = sorted(count_matrix.index.astype(str))
-    pastel_palette = sns.color_palette("pastel", len(clusters_prev))
-    color_map = dict(zip(clusters_prev, pastel_palette))
+    custom_colors = {
+        "0": "#FFB5A7",
+        "1": "#FFBE98",
+        "2": "#FCE5A1",
+        "3": "#A8E6C2",
+        "4": "#A7C7E7",
+        "X": "#E3C191"
+    }
 
+    unique_clusters = sorted(set(count_matrix.index.astype(str)) | set(count_matrix.columns.astype(str)))
+    color_map = {c: custom_colors.get(c, "#CCCCCC") for c in unique_clusters}
+    
     fig, axes = plt.subplots(2, 1, figsize=(14, 14))
 
     for ax, data, title_suffix, ylabel, is_percent in [
         (axes[0], percent_matrix, "(% Riders)", "% of Riders", True),
         (axes[1], count_matrix, "(Counts)", "Number of Riders", False)
     ]:
-        data.plot(kind='bar', stacked=True, ax=ax, color=[color_map[c] for c in clusters_prev], legend=False)
+        data.plot(kind='bar', stacked=True, ax=ax, color=[color_map.get(c, "#CCCCCC") for c in data.columns], legend=False)
         ax.set_title(f"{region} {prev_month_label} → {curr_month_label} {title_suffix}", fontweight='bold')
         ax.set_ylabel(ylabel)
         ax.set_xlabel(f"To Cluster ({curr_month_label})")
@@ -63,8 +71,8 @@ def generate_cluster_transition_barchart(df_prev, df_curr, prev_month_label, cur
                 color='black'
             )
 
-        handles = [plt.Rectangle((0, 0), 1, 1, color=color_map[c]) for c in clusters_prev]
-        ax.legend(handles, clusters_prev, title=f"From ({prev_month_label})", bbox_to_anchor=(1.01, 1), loc='upper left')
+        handles = [plt.Rectangle((0, 0), 1, 1, color=color_map[c]) for c in data.columns]
+        ax.legend(handles, data.columns, title=f"From ({prev_month_label})", bbox_to_anchor=(1.01, 1), loc='upper left')
 
     plt.tight_layout()
     plt.savefig(chart_path, dpi=300)

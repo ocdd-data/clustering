@@ -135,6 +135,8 @@ def main():
     )
     main_ts = response["ts"]
 
+    df_prev_clustered["cluster"] = df_prev_clustered["cluster"].astype(str)
+    df_curr_clustered["cluster"] = df_curr_clustered["cluster"].astype(str)
     chart_path, count_path, percent_path = generate_cluster_transition_barchart(
         df_prev_clustered, df_curr_clustered, prev_month_label, output_month, output_dir, region
     )
