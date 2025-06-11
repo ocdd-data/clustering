@@ -148,6 +148,20 @@ def main():
         thread_ts=main_ts
     )
 
+    slack.client.files_upload_v2(
+        channel=os.getenv("SLACK_CHANNEL"),
+        file=count_path,
+        initial_comment="📎 Transition Count Matrix CSV",
+        thread_ts=main_ts
+    )
+
+    slack.client.files_upload_v2(
+        channel=os.getenv("SLACK_CHANNEL"),
+        file=percent_path,
+        initial_comment="📎 Transition Percentage Matrix CSV",
+        thread_ts=main_ts
+    )
+
     time.sleep(2)
 
     curr_path = f"{output_dir}/rider_clusters_{region}_{output_month}.csv"
