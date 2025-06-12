@@ -11,9 +11,9 @@ import os
 ORDERED_CLUSTER_MAPPING = {
     0: 'Cluster 0 - New or Inactive Riders',
     1: 'Cluster 1 - Occasional Riders',
-    2: 'Cluster 2 - Moderately Active Passengers',
+    2: 'Cluster 2 - Moderately Active Riders',
     3: 'Cluster 3 - Regular Riders',
-    4: 'Cluster 4 - Highly Active Passengers'
+    4: 'Cluster 4 - Highly Active Riders'
 }
 
 class RiderClusterTrainer:
@@ -26,9 +26,9 @@ class RiderClusterTrainer:
     ORDERED_CLUSTER_MAPPING = {
         0: 'Cluster 0 - New or Inactive Riders',
         1: 'Cluster 1 - Occasional Riders',
-        2: 'Cluster 2 - Moderately Active Passengers',
+        2: 'Cluster 2 - Moderately Active Riders',
         3: 'Cluster 3 - Regular Riders',
-        4: 'Cluster 4 - Highly Active Passengers'
+        4: 'Cluster 4 - Highly Active Riders'
     }
     def train(self, df: pd.DataFrame):
         df = df.dropna(subset=self.features)
