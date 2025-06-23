@@ -137,14 +137,43 @@ def main():
 
     df_prev_clustered["cluster"] = df_prev_clustered["cluster"].astype(str)
     df_curr_clustered["cluster"] = df_curr_clustered["cluster"].astype(str)
-    chart_path, count_path, percent_path = generate_cluster_transition_barchart(
+    chart_path, count_path, percent_path, movement_summary_text, _ = generate_cluster_transition_barchart(
         df_prev_clustered, df_curr_clustered, prev_month_label, output_month, output_dir, region
     )
+
 
     slack.client.files_upload_v2(
         channel=os.getenv("SLACK_CHANNEL"),
         file=chart_path,
         initial_comment="📊 Cluster Transition Chart",
+        thread_ts=main_ts
+    )
+
+    if movement_summary_text:
+        slack.client.chat_postMessage(
+            channel=os.getenv("SLACK_CHANNEL"),
+            text="📌 *Significant Cluster Movements:*",
+            blocks=[
+                {
+                    "type": "section",
+                    "text": {
+                        "type": "mrkdwn",
+                        "text": movement_summary_text
+                    }
+                }
+            ],
+            thread_ts=main_ts
+        )
+
+    time.sleep(15)
+
+    curr_path = f"{output_dir}/rider_clusters_{region}_{output_month}.csv"
+    df_curr_clustered.to_csv(curr_path, index=False)
+
+    slack.client.files_upload_v2(
+        channel=os.getenv("SLACK_CHANNEL"),
+        file=curr_path,
+        initial_comment="📎 Rider Cluster Assignment CSV",
         thread_ts=main_ts
     )
 
@@ -162,17 +191,6 @@ def main():
         thread_ts=main_ts
     )
 
-    time.sleep(2)
-
-    curr_path = f"{output_dir}/rider_clusters_{region}_{output_month}.csv"
-    df_curr_clustered.to_csv(curr_path, index=False)
-
-    slack.client.files_upload_v2(
-        channel=os.getenv("SLACK_CHANNEL"),
-        file=curr_path,
-        initial_comment="📎 Rider Cluster Assignment CSV",
-        thread_ts=main_ts
-    )
 
 if __name__ == "__main__":
     main()
