@@ -25,7 +25,6 @@ def generate_cluster_transition_barchart(df_prev, df_curr, prev_month_label, cur
     count_path = os.path.join(output_dir, f"transition_counts_{region}_{curr_month_label}.csv")
     percent_path = os.path.join(output_dir, f"transition_percents_{region}_{curr_month_label}.csv")
     chart_path = os.path.join(output_dir, f"cluster_transition_chart_{region}_{curr_month_label}.png")
-    heatmap_path = os.path.join(output_dir, f"rowwise_transition_heatmap_{region}_{curr_month_label}.png")
 
     count_matrix.to_csv(count_path)
     percent_matrix_row.to_csv(percent_path)
@@ -131,6 +130,8 @@ def generate_cluster_transition_barchart(df_prev, df_curr, prev_month_label, cur
                     reactivated.append(message)
 
     sections = []
+    if upgrades:
+        sections.insert("\n".join(f"> {line}" for line in [":rocket: *Upgrades*"] + upgrades))
     if downgrades:
         sections.append("\n".join(f"> {line}" for line in [":boom: *Downgrade*"] + downgrades))
     if retained:
