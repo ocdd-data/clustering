@@ -1,0 +1,47 @@
+# This workflow runs the weekly expanding window clustering for Rider data.
+name: Rider Clustering Weekly Expanding Window
+
+on:
+  schedule:
+    - cron: '00 01 * * 1'  # Runs at 09:00 SGT every Monday
+  workflow_dispatch:
+
+jobs:
+  run-weekly-clustering:
+    strategy:
+      matrix:
+        region: ["SG", "KH"]
+        include:
+          - region: "SG"
+            query_id: 4769  # Update with correct SG weekly query
+            report_id: 5045
+        #   - region: "KH"
+        #     query_id: 
+        #     report_id: 
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Create .env file
+        run: |
+          echo "REDASH_BASE_URL=${{ secrets.REDASH_BASE_URL }}" >> .env
+          echo "REDASH_API_KEY=${{ secrets.REDASH_API_KEY }}" >> .env
+          echo "SLACK_TOKEN=${{ secrets.SLACK_TOKEN }}" >> .env
+          echo "SLACK_CHANNEL=${{ secrets.SLACK_CHANNEL }}" >> .env
+          echo "REGION=${{ matrix.region }}" >> .env
+          echo "QUERY_ID=${{ matrix.query_id }}" >> .env
+          echo "REPORT_ID=${{ matrix.report_id }}" >> .env
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+
+      - name: Run weekly expanding clustering
+        run: python -m weekly.weekly_expanding_window
