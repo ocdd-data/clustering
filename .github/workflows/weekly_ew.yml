@@ -10,10 +10,10 @@ jobs:
   run-weekly-clustering:
     strategy:
       matrix:
-        region: ["SG", "KH"]
+        region: ["SG"]
         include:
           - region: "SG"
-            query_id: 4769  # Update with correct SG weekly query
+            query_id: 4769  
             report_id: 5045
         #   - region: "KH"
         #     query_id: 
