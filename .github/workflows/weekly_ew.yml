@@ -3,7 +3,8 @@ name: Rider Clustering Weekly Expanding Window
 
 on:
   schedule:
-    - cron: '00 01 * * 1'  # Runs at 09:00 SGT every Monday
+    - cron: '00 01 * * 1'  # Every Monday at 09:00 SGT
+    - cron: '00 01 1 * *'  # 1st of every month at 09:00 SGT
   workflow_dispatch:
 
 jobs:
