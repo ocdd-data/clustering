@@ -55,9 +55,10 @@ def run_weekly_clustering(reference_monday: datetime, custom_end_date: datetime 
 
     start_date = reference_monday.replace(day=1)
     end_date = custom_end_date if custom_end_date else reference_monday - timedelta(days=1)  # Sunday before current Monday
-
-    if start_date == reference_monday:
-        print(f"Skipping {reference_monday.strftime('%Y-%m-%d')} (1st of month is Monday)")
+    
+    # Only skip if it's a weekly run (no custom_end_date provided)
+    if start_date == reference_monday and custom_end_date is None:
+        print(f"Skipping {reference_monday.strftime('%Y-%m-%d')} (1st of month is Monday, no weekly data yet)")
         return None
 
     redash = Redash(os.getenv("REDASH_API_KEY"), os.getenv("REDASH_BASE_URL"))
@@ -120,7 +121,7 @@ def main():
     else:
         print(f"Running weekly clustering for {this_monday.strftime('%Y-%m-%d')}")
         run_weekly_clustering(this_monday)
-        
+
     print("🟨 Today:", today)
     print("🟨 Is 1st of month?", today.day == 1)
     if today.day == 1:
