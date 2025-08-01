@@ -120,6 +120,13 @@ def main():
     else:
         print(f"Running weekly clustering for {this_monday.strftime('%Y-%m-%d')}")
         run_weekly_clustering(this_monday)
+        
+    print("🟨 Today:", today)
+    print("🟨 Is 1st of month?", today.day == 1)
+    if today.day == 1:
+        print("🟨 Running monthly clustering...")
+        print("🟨 Reference start date:", reference_monday)
+        print("🟨 End date:", last_day_prev_month)
 
 
 if __name__ == "__main__":
