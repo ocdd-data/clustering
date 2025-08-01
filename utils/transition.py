@@ -131,7 +131,7 @@ def generate_cluster_transition_barchart(df_prev, df_curr, prev_month_label, cur
 
     sections = []
     if upgrades:
-        sections.insert("\n".join(f"> {line}" for line in [":rocket: *Upgrades*"] + upgrades))
+        sections.insert(0, "\n".join(f"> {line}" for line in [":rocket: *Upgrades*"] + upgrades))
     if downgrades:
         sections.append("\n".join(f"> {line}" for line in [":boom: *Downgrade*"] + downgrades))
     if retained:
