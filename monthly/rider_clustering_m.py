@@ -63,8 +63,8 @@ def build_slack_attachments(df_curr, df_prev, label_map):
         delta_riders = curr_riders - prev_riders
         pct_riders = (delta_riders / prev_riders * 100) if prev_riders else 0
 
-        curr_trips = curr_subset['count'].sum()
-        prev_trips = prev_subset['count'].sum()
+        curr_trips = curr_subset['trip'].sum()
+        prev_trips = prev_subset['trip'].sum()
         delta_trips = curr_trips - prev_trips
         pct_trips = (delta_trips / prev_trips * 100) if prev_trips else 0
 
