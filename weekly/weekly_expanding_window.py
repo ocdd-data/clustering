@@ -95,7 +95,7 @@ def run_weekly_clustering(reference_monday: datetime, custom_end_date: datetime 
     output_filename = output_dir / f"EW_Weekly_Rider_Clustering_{start_date.strftime('%-d')}-{end_date.strftime('%-d%b').lower()}.csv"
     df_summary.to_csv(output_filename, index=False)
 
-    slack.client.files_upload(
+    slack.client.files_upload_v2(
         channels=os.getenv("SLACK_CHANNEL"),
         file=str(output_filename),
         title=f"Weekly Expanding Clustering Summary — {start_date.strftime('%-d')}–{end_date.strftime('%-d %B %Y')}",
