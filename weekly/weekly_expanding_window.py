@@ -1,9 +1,9 @@
 import os
-from pathlib import Path
 from datetime import datetime, timedelta
+from pathlib import Path
 
-import pandas as pd
 import numpy as np
+import pandas as pd
 from dotenv import load_dotenv
 
 from utils.helpers import Query, Redash
@@ -85,10 +85,6 @@ def run_weekly_clustering(reference_monday: datetime, custom_end_date: datetime 
 
     all_labels = list(predictor.label_map.values())
     df_summary = df_summary.set_index("cluster_name").reindex(all_labels, fill_value=0).reset_index()
-
-    slack_text = "cluster_name," + column_name + "\n" + "\n".join([
-        f"{row['cluster_name']},{row[column_name]}" for _, row in df_summary.iterrows()
-    ])
 
     output_dir = Path("output")
     output_dir.mkdir(exist_ok=True)
