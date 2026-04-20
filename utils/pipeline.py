@@ -21,7 +21,7 @@ class RiderClusterTrainer:
         self.k = n_clusters
         self.features = ['count', 'trip', 'avg']
         self.scaler = StandardScaler()
-        self.kmeans = KMeans(n_clusters=self.k, random_state=42, n_init='auto')
+        self.kmeans = KMeans(n_clusters=self.k, random_state=42, n_init=10)
 
     ORDERED_CLUSTER_MAPPING = {
         0: 'Cluster 0 - New or Inactive Riders',
