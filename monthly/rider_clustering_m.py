@@ -9,6 +9,19 @@ from utils.helpers import Query, Redash
 from utils.slack import SlackBot
 from utils.transition import generate_cluster_transition_barchart
 
+def add_month_length_normalized_features(df: pd.DataFrame, month_fallback: str = None) -> pd.DataFrame:
+    df = df.copy()
+    if 'month' in df.columns:
+        df['days_in_month'] = pd.to_datetime(df['month']).dt.days_in_month
+    else:
+        if not month_fallback:
+            raise ValueError("No 'month' column in data and no month_fallback provided.")
+        df['days_in_month'] = pd.to_datetime(month_fallback).days_in_month
+    df['count_rate'] = df['count'] / df['days_in_month']
+    df['trip_rate'] = df['trip'] / df['days_in_month']
+    return df
+
+
 class RiderClusterPredictor:
     def __init__(self, models_dir: Path):
         region = os.getenv("REGION")
@@ -25,11 +38,12 @@ class RiderClusterPredictor:
         self.label_map = dict(zip(cluster_def["Cluster"], cluster_def["Description"]))
 
     def assign(self, df):
+        df = add_month_length_normalized_features(df)
         X = df[self.scaler_mean.index].dropna()
         X_scaled = (X - self.scaler_mean) / np.sqrt(self.scaler_var)
         dists = np.linalg.norm(X_scaled.values[:, np.newaxis] - self.centroids, axis=2)
 
-        df = df.copy()
+        df = df.loc[X.index].copy()
         df['cluster'] = np.argmin(dists, axis=1)
         df['cluster_name'] = df['cluster'].map(self.label_map)
         return df
@@ -137,33 +151,6 @@ def main():
 
     df_prev_clustered["cluster"] = df_prev_clustered["cluster"].astype(str)
     df_curr_clustered["cluster"] = df_curr_clustered["cluster"].astype(str)
-    chart_path, count_path, percent_path, movement_summary_text, _ = generate_cluster_transition_barchart(
-        df_prev_clustered, df_curr_clustered, prev_month_label, output_month, output_dir, region
-    )
-
-
-    slack.client.files_upload_v2(
-        channel=os.getenv("SLACK_CHANNEL"),
-        file=chart_path,
-        initial_comment="📊 Cluster Transition Chart",
-        thread_ts=main_ts
-    )
-
-    if movement_summary_text:
-        slack.client.chat_postMessage(
-            channel=os.getenv("SLACK_CHANNEL"),
-            text="📌 *Significant Cluster Movements:*",
-            blocks=[
-                {
-                    "type": "section",
-                    "text": {
-                        "type": "mrkdwn",
-                        "text": movement_summary_text
-                    }
-                }
-            ],
-            thread_ts=main_ts
-        )
 
     time.sleep(15)
 
@@ -177,19 +164,47 @@ def main():
         thread_ts=main_ts
     )
 
-    slack.client.files_upload_v2(
-        channel=os.getenv("SLACK_CHANNEL"),
-        file=count_path,
-        initial_comment="📎 Transition Count Matrix CSV",
-        thread_ts=main_ts
-    )
+    if not df_prev.empty:
+        chart_path, count_path, percent_path, movement_summary_text, _ = generate_cluster_transition_barchart(
+            df_prev_clustered, df_curr_clustered, prev_month_label, output_month, output_dir, region
+        )
 
-    slack.client.files_upload_v2(
-        channel=os.getenv("SLACK_CHANNEL"),
-        file=percent_path,
-        initial_comment="📎 Transition Percentage Matrix CSV",
-        thread_ts=main_ts
-    )
+        slack.client.files_upload_v2(
+            channel=os.getenv("SLACK_CHANNEL"),
+            file=chart_path,
+            initial_comment="📊 Cluster Transition Chart",
+            thread_ts=main_ts
+        )
+
+        if movement_summary_text:
+            slack.client.chat_postMessage(
+                channel=os.getenv("SLACK_CHANNEL"),
+                text="📌 *Significant Cluster Movements:*",
+                blocks=[
+                    {
+                        "type": "section",
+                        "text": {
+                            "type": "mrkdwn",
+                            "text": movement_summary_text
+                        }
+                    }
+                ],
+                thread_ts=main_ts
+            )
+
+        slack.client.files_upload_v2(
+            channel=os.getenv("SLACK_CHANNEL"),
+            file=count_path,
+            initial_comment="📎 Transition Count Matrix CSV",
+            thread_ts=main_ts
+        )
+
+        slack.client.files_upload_v2(
+            channel=os.getenv("SLACK_CHANNEL"),
+            file=percent_path,
+            initial_comment="📎 Transition Percentage Matrix CSV",
+            thread_ts=main_ts
+        )
 
 
 if __name__ == "__main__":
