@@ -7,6 +7,26 @@ from sklearn.cluster import KMeans
 import joblib
 import numpy as np
 import os
+import calendar
+
+def add_month_length_normalized_features(df: pd.DataFrame, month_fallback: str = None) -> pd.DataFrame:
+    df = df.copy()
+
+    if 'month' in df.columns:
+        df['days_in_month'] = pd.to_datetime(df['month']).dt.days_in_month
+
+    elif month_fallback:
+        df['days_in_month'] = pd.to_datetime(month_fallback).days_in_month
+
+    else:
+        # fallback: assume December 2024 (based on query)
+        year, month = 2024, 12
+        df['days_in_month'] = calendar.monthrange(year, month)[1]
+
+    df['count_rate'] = df['count'] / df['days_in_month']
+    df['trip_rate'] = df['trip'] / df['days_in_month']
+    return df
+
 
 ORDERED_CLUSTER_MAPPING = {
     0: 'Cluster 0 - New or Inactive Riders',
@@ -19,9 +39,9 @@ ORDERED_CLUSTER_MAPPING = {
 class RiderClusterTrainer:
     def __init__(self, n_clusters=5):
         self.k = n_clusters
-        self.features = ['count', 'trip', 'avg']
+        self.features = ['count_rate', 'trip_rate', 'avg']
         self.scaler = StandardScaler()
-        self.kmeans = KMeans(n_clusters=self.k, random_state=42, n_init=10)
+        self.kmeans = KMeans(n_clusters=self.k, random_state=42, n_init='auto')
 
     ORDERED_CLUSTER_MAPPING = {
         0: 'Cluster 0 - New or Inactive Riders',
@@ -30,7 +50,8 @@ class RiderClusterTrainer:
         3: 'Cluster 3 - Regular Riders',
         4: 'Cluster 4 - Highly Active Riders'
     }
-    def train(self, df: pd.DataFrame):
+    def train(self, df: pd.DataFrame, month: str = None):
+        df = add_month_length_normalized_features(df, month_fallback=month)
         df = df.dropna(subset=self.features)
         X_scaled = self.scaler.fit_transform(df[self.features])
         self.kmeans.fit(X_scaled)
@@ -39,7 +60,7 @@ class RiderClusterTrainer:
         centroids['original_cluster'] = centroids.index
         centroids['activity_score'] = centroids[self.features].sum(axis=1)
 
-        centroids = centroids.sort_values(by='count').reset_index(drop=True)
+        centroids = centroids.sort_values(by='trip_rate').reset_index(drop=True)
 
         centroids['Cluster'] = range(len(centroids))
         centroids['Description'] = centroids['Cluster'].map(ORDERED_CLUSTER_MAPPING)
@@ -78,7 +99,7 @@ def main():
     df = redash.get_result(query.id)
 
     trainer = RiderClusterTrainer()
-    trainer.train(df)
+    trainer.train(df, month=os.getenv("START_DATE"))
 
     print(f"Model saved to models/{region}")
 
