@@ -1,12 +1,13 @@
 import os
-from datetime import datetime, timedelta
 from pathlib import Path
+from datetime import datetime, timedelta
 
-import numpy as np
 import pandas as pd
+import numpy as np
 from dotenv import load_dotenv
 
 from utils.helpers import Query, Redash
+from utils.pipeline import add_month_length_normalized_features
 from utils.slack import SlackBot
 
 
@@ -26,12 +27,12 @@ class RiderClusterPredictor:
         self.label_map = dict(zip(cluster_def["Cluster"], cluster_def["Description"]))
 
     def assign(self, df):
+        df = add_month_length_normalized_features(df)
         X = df[self.scaler_mean.index].dropna()
         X_scaled = (X - self.scaler_mean) / np.sqrt(self.scaler_var)
         dists = np.linalg.norm(X_scaled.values[:, np.newaxis] - self.centroids, axis=2)
 
-        df = df.copy()
-        df = df.loc[X.index]
+        df = df.loc[X.index].copy()
         df['cluster'] = np.argmin(dists, axis=1)
         df['cluster_name'] = df['cluster'].map(self.label_map)
         return df
@@ -75,6 +76,12 @@ def run_weekly_clustering(reference_monday: datetime, custom_end_date: datetime 
     redash.run_queries([query])
     df = redash.get_result(query.id)
 
+    if df is None or df.empty:
+        print(f"No data returned for {date_range_start} to {date_range_end}, skipping.")
+        return None
+
+    df['month'] = date_range_start
+
     predictor = RiderClusterPredictor(models_dir=models_dir)
 
     df_clustered = predictor.assign(df)
@@ -86,16 +93,20 @@ def run_weekly_clustering(reference_monday: datetime, custom_end_date: datetime 
     all_labels = list(predictor.label_map.values())
     df_summary = df_summary.set_index("cluster_name").reindex(all_labels, fill_value=0).reset_index()
 
+    slack_text = "cluster_name," + column_name + "\n" + "\n".join([
+        f"{row['cluster_name']},{row[column_name]}" for _, row in df_summary.iterrows()
+    ])
+
     output_dir = Path("output")
     output_dir.mkdir(exist_ok=True)
-    output_filename = output_dir / f"EW_Weekly_Rider_Clustering_{start_date.strftime('%-d')}-{end_date.strftime('%-d%b').lower()}.csv"
+    output_filename = output_dir / f"EW_Weekly_Rider_Clustering_{start_date.strftime('%#d')}-{end_date.strftime('%#d%b').lower()}.csv"
     df_summary.to_csv(output_filename, index=False)
 
     slack.client.files_upload_v2(
-        channels=os.getenv("SLACK_CHANNEL"),
+        channel=os.getenv("SLACK_CHANNEL"),
         file=str(output_filename),
-        title=f"Weekly Expanding Clustering Summary — {start_date.strftime('%-d')}–{end_date.strftime('%-d %B %Y')}",
-        initial_comment=f":chart_with_upwards_trend: *Weekly Expanding Clustering Summary: {start_date.strftime('%-d')}–{end_date.strftime('%-d %B %Y')}*"
+        title=f"Weekly Expanding Clustering Summary — {start_date.strftime('%#d')}–{end_date.strftime('%#d %B %Y')}",
+        initial_comment=f":chart_with_upwards_trend: *Weekly Expanding Clustering Summary: {start_date.strftime('%#d')}–{end_date.strftime('%#d %B %Y')}*"
     )
     print("✅ Posted summary CSV to Slack.")
 
