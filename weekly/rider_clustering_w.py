@@ -37,12 +37,18 @@ def main():
             print(f"No data for {week}")
             return
 
+        # get_redash_data normalises total/frequency by days_in_period for clustering.
+        # Restore raw trip totals here so the report reflects actual trip counts.
+        days_in_period = (end - start).days + 1
+        df["trip_rate"] = df["trip_rate"] * days_in_period
+        stats = stats * days_in_period
+
         cluster_counts = df['Cluster_Description'].value_counts().to_dict()
         cluster_counts["Total"] = len(df)
         stats_key = week.strftime("%Y-%m-%d")
         period_bounds[stats_key] = (start, end)
 
-        stats.loc[stats_key, "Total"] = df["total"].sum()
+        stats.loc[stats_key, "Total"] = df["trip_rate"].sum()
         avg_trips = (stats.loc[stats_key].drop("Total") / pd.Series(cluster_counts).drop("Total")).round(2)
         avg_trips["Total"] = stats.loc[stats_key, "Total"] / cluster_counts["Total"]
 
