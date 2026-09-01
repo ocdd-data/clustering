@@ -2,7 +2,9 @@ name: Weekly Rider Clustering
 
 on:
   schedule:
-    - cron: '0 1 * * 1'
+    # Sun 20:17 UTC = Mon 04:17 SGT. Off-the-hour minute and a ~5h buffer so that
+    # GitHub's best-effort scheduler queue delay still lands the Slack post in the SGT morning.
+    - cron: '17 20 * * 0'
   workflow_dispatch:
 
 jobs:

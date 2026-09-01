@@ -4,7 +4,9 @@ name: Rider Clustering Monthly
 # Controls when the workflow will run
 on:
   schedule:
-    - cron: '00 00 1 * *'
+    # 1st at 00:43 UTC = 08:43 SGT. Must stay on the 1st, so only the minute is moved
+    # off the heavily-contended top of the hour.
+    - cron: '43 00 1 * *'
   workflow_dispatch:
 
 jobs:

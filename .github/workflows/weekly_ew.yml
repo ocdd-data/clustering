@@ -3,8 +3,11 @@ name: Rider Clustering Weekly Expanding Window
 
 on:
   schedule:
-    - cron: '00 01 * * 1'  # Every Monday at 09:00 SGT
-    - cron: '00 01 1 * *'  # 1st of every month at 09:00 SGT
+    # Sun 20:09 UTC = Mon 04:09 SGT (buffered so queue delay still lands in the morning)
+    - cron: '09 20 * * 0'
+    # 1st at 00:51 UTC = 08:51 SGT. Must stay on the 1st, so this one cannot be
+    # buffered the same way; off-the-hour minute only.
+    - cron: '51 00 1 * *'
   workflow_dispatch:
 
 jobs:
