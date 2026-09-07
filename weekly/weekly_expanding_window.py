@@ -100,14 +100,14 @@ def run_weekly_clustering(reference_monday: datetime, custom_end_date: datetime 
 
     output_dir = Path("output")
     output_dir.mkdir(exist_ok=True)
-    output_filename = output_dir / f"EW_Weekly_Rider_Clustering_{start_date.strftime('%#d')}-{end_date.strftime('%#d%b').lower()}.csv"
+    output_filename = output_dir / f"EW_Weekly_Rider_Clustering_{start_date.strftime('%d')}-{end_date.strftime('%d%b').lower()}.csv"
     df_summary.to_csv(output_filename, index=False)
 
     slack.client.files_upload_v2(
         channel=os.getenv("SLACK_CHANNEL"),
         file=str(output_filename),
-        title=f"Weekly Expanding Clustering Summary — {start_date.strftime('%#d')}–{end_date.strftime('%#d %B %Y')}",
-        initial_comment=f":chart_with_upwards_trend: *Weekly Expanding Clustering Summary: {start_date.strftime('%#d')}–{end_date.strftime('%#d %B %Y')}*"
+        title=f"Weekly Expanding Clustering Summary — {start_date.strftime('%d')}–{end_date.strftime('%d %B %Y')}",
+        initial_comment=f":chart_with_upwards_trend: *Weekly Expanding Clustering Summary: {start_date.strftime('%d')}–{end_date.strftime('%d %B %Y')}*"
     )
     print("✅ Posted summary CSV to Slack.")
 
