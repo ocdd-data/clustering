@@ -6,6 +6,7 @@ from pathlib import Path
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
 from utils.helpers import Query, Redash
+from utils.report_dates import sgt_today
 from utils.slack import SlackBot
 from utils.transition import generate_cluster_transition_barchart
 
@@ -112,7 +113,7 @@ def main():
     region = os.getenv("REGION")
     query_id = int(os.getenv("REPORT_ID"))
 
-    today = datetime.today()
+    today = sgt_today()  # SGT reporting clock, see utils.report_dates
     first_day_last_month = (today.replace(day=1) - timedelta(days=1)).replace(day=1)
     first_day_prev_month = (first_day_last_month - timedelta(days=1)).replace(day=1)
 

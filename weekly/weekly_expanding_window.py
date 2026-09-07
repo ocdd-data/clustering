@@ -8,6 +8,7 @@ from dotenv import load_dotenv
 
 from utils.helpers import Query, Redash
 from utils.pipeline import add_month_length_normalized_features
+from utils.report_dates import sgt_reference_monday, sgt_today
 from utils.slack import SlackBot
 
 
@@ -116,8 +117,10 @@ def run_weekly_clustering(reference_monday: datetime, custom_end_date: datetime 
 def main():
     load_dotenv()
 
-    today = datetime.today()
-    this_monday = today - timedelta(days=today.weekday())  # Gets the Monday of current week
+    # Anchor to the SGT calendar, not the runner's UTC clock: the weekly cron fires
+    # Sunday evening UTC, which is already Monday morning SGT. See utils.report_dates.
+    today = sgt_today()
+    this_monday = sgt_reference_monday()  # Monday of the current SGT week
 
     # If today is the 1st of a month, run summary for the full previous month
     if today.day == 1:

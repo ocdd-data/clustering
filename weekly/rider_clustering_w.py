@@ -1,12 +1,13 @@
 # === Imports
 import os
-from datetime import date, timedelta
+from datetime import timedelta
 
 import pandas as pd
 from dotenv import load_dotenv
 
 from models.clustering_weekly import get_redash_data
 from utils.helpers import Redash
+from utils.report_dates import sgt_reference_monday
 from utils.slack import SlackBot
 
 
@@ -18,8 +19,9 @@ def main():
     slack_channel = os.getenv("SLACK_CHANNEL")
     redash = Redash(key=api_key, base_url=base_url)
 
-    today = date.today()
-    this_monday = today if today.weekday() == 0 else today - timedelta(days=today.weekday())
+    # Anchor to the SGT calendar, not the runner's UTC clock: the weekly cron fires
+    # Sunday evening UTC, which is already Monday morning SGT. See utils.report_dates.
+    this_monday = sgt_reference_monday().date()
     last_monday = this_monday - timedelta(weeks=1)
 
     def get_bounds(monday):

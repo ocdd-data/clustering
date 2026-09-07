@@ -3,6 +3,10 @@ name: Rider Clustering Weekly Expanding Window
 
 on:
   schedule:
+    # NOTE: the weekly cron fires SUNDAY UTC on purpose, which is already Monday SGT.
+    # The job resolves its reporting week on the SGT calendar (utils/report_dates.py).
+    # If you change this cron, keep it at or after 16:00 UTC Sunday, or the SGT date
+    # will fall back to Sunday and the report will be a week stale.
     # Sun 20:09 UTC = Mon 04:09 SGT (buffered so queue delay still lands in the morning)
     - cron: '09 20 * * 0'
     # 1st at 00:51 UTC = 08:51 SGT. Must stay on the 1st, so this one cannot be

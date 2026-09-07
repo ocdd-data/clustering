@@ -2,6 +2,10 @@ name: Weekly Rider Clustering
 
 on:
   schedule:
+    # NOTE: the weekly cron fires SUNDAY UTC on purpose, which is already Monday SGT.
+    # The job resolves its reporting week on the SGT calendar (utils/report_dates.py).
+    # If you change this cron, keep it at or after 16:00 UTC Sunday, or the SGT date
+    # will fall back to Sunday and the report will be a week stale.
     # Sun 20:17 UTC = Mon 04:17 SGT. Off-the-hour minute and a ~5h buffer so that
     # GitHub's best-effort scheduler queue delay still lands the Slack post in the SGT morning.
     - cron: '17 20 * * 0'
