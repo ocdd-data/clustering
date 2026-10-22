@@ -18,7 +18,7 @@
  * Each year's matrices sit in their own table, newest on top. When the Dec-Jan group is filled (the January
  * file), next year's tables are added above it, labelled and empty; Rider(New) gets next year's 12 columns
  * when a January file arrives. Labels are checked before anything is written. Re-importing a month
- * overwrites it. On success the imported tab is deleted; on an error it stays, with the reason in red at F4.
+ * overwrites it. Rider(New)'s colour rules are widened to each month filled. On success the imported tab is deleted; on an error it stays, with the reason in red at F4.
  *
  * Setup: Extensions > Apps Script, paste this file, save, reload the sheet, Segmentation > Enable auto-update.
  */
@@ -146,6 +146,7 @@ function run_(manual, monthOverride) {
     riders.getRange(R.CHURN, col, 5, 1).setValues(TO.slice(0, 5).map(k => [src.counts[k].X]));
     riders.getRange(R.RATE, col, 5, 1).setFormulas(TO.slice(0, 5).map((_, i) =>
       [`='${MATRIX_TABS.percents}'!${rateCol}${churnCell.row + i}/100`]));
+    extendFormatting_(riders, col);
 
     // December filled (the Dec-Jan group): next year's tables, ready for February.
     if (pIdx === 11) Object.values(tabs).forEach(sh => { if (!findTables_(sh)[pYear + 1]) addYearTable_(sh, pYear + 1); });
@@ -266,6 +267,22 @@ function addYearColumns_(sh, mc, year) {
   sh.getRange(R.YEAR_ROW, first).setValue(year);
   sh.getRange(R.MONTH_ROW, first, 1, 12).setValues([MONTHS]);
   return first;
+}
+
+// Colour rules on Rider(New) that end at the column before this month are widened to cover it, so the month
+// is coloured like the months before (the rules themselves are unchanged).
+function extendFormatting_(sh, col) {
+  const rules = sh.getConditionalFormatRules();
+  let changed = false;
+  const out = rules.map(rule => {
+    const ranges = rule.getRanges();
+    const widened = ranges.map(r => (r.getLastColumn() === col - 1 && r.getColumn() < col
+      ? sh.getRange(r.getRow(), r.getColumn(), r.getNumRows(), col - r.getColumn() + 1) : r));
+    if (widened.every((r, i) => r === ranges[i])) return rule;
+    changed = true;
+    return rule.copy().setRanges(widened).build();
+  });
+  if (changed) sh.setConditionalFormatRules(out);
 }
 
 // ---------- Matrices ----------
