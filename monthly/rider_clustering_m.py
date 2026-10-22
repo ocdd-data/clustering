@@ -9,6 +9,7 @@ from utils.helpers import Query, Redash
 from utils.report_dates import sgt_today
 from utils.slack import SlackBot
 from utils.transition import generate_cluster_transition_barchart
+from utils.sheet_export import write_sheet_import
 
 def add_month_length_normalized_features(df: pd.DataFrame, month_fallback: str = None) -> pd.DataFrame:
     df = df.copy()
@@ -204,6 +205,18 @@ def main():
             channel=os.getenv("SLACK_CHANNEL"),
             file=percent_path,
             initial_comment="📎 Transition Percentage Matrix CSV",
+            thread_ts=main_ts
+        )
+
+        # Everything the segmentation sheet needs, in one file for its File > Import.
+        sheet_path = write_sheet_import(
+            f"{output_dir}/segmentation_sheet_{region}_{output_month}.csv", region,
+            first_day_last_month.strftime("%Y-%m-%d"), df_curr_clustered, count_path, percent_path
+        )
+        slack.client.files_upload_v2(
+            channel=os.getenv("SLACK_CHANNEL"),
+            file=sheet_path,
+            initial_comment="📎 Segmentation sheet import (File > Import > Insert new sheet(s))",
             thread_ts=main_ts
         )
 
